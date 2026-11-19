@@ -1,0 +1,17 @@
+# Local secrets and runtime state
+.env
+.env.*
+!.env.example
+node_modules/
+.next/
+.vercel/
+coverage/
+*.tsbuildinfo
+
+# Local research data and archives
+/restaurants_a_contacter.csv
+/pharmacies_a_contacter.csv
+/Listes_Restaurants_Pharmacies_Douala.pdf
+/docs_projet_livraison.zip
+**/*.zip
+**/seed.sql

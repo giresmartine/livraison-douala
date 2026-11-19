@@ -1,0 +1,30 @@
+{
+  "home": {
+    "brand": "Livraison",
+    "city": "Douala, Cameroun",
+    "serviceArea": "Quartiers partout au Cameroun",
+    "languageLabel": "Choisir la langue",
+    "eyebrow": "Jour et nuit, près de toi",
+    "title": "Où veux-tu être livré ?",
+    "description": "Saisis librement ta ville et ton quartier au Cameroun. Aucune liste prédéfinie ni position GPS n’est obligatoire.",
+    "metaDescription": "Saisis un quartier au Cameroun pour continuer.",
+    "availabilityNote": "Tu peux continuer avec n’importe quel quartier au Cameroun. La disponibilité réelle de livraison reste à vérifier.",
+    "addressHeading": "Ton adresse de livraison",
+    "addressHint": "Indique la ville et le quartier où tu souhaites être livré.",
+    "addressLabel": "Ville et quartier au Cameroun",
+    "addressPlaceholder": "Ex. Bafoussam, quartier Djeleng…",
+    "useLocation": "Utiliser ma position",
+    "locating": "Recherche de ta position…",
+    "continue": "Continuer",
+    "privacyNote": "Ta position n’est demandée qu’avec ton accord. Tu peux aussi saisir un repère.",
+    "addressRequired": "Saisis un quartier ou un repère pour continuer.",
+    "storageError": "Le brouillon n’a pas pu être conservé sur cet appareil. Réessaie ou note ton repère.",
+    "draftSaved": "Adresse gardée dans cet onglet.",
+    "locationUnavailable": "La position n’est pas disponible sur cet appareil. Tu peux saisir ton quartier.",
+    "locationDenied": "Accès à la position refusé. Saisis ton quartier pour continuer.",
+    "locationTimedOut": "La recherche a pris trop de temps. Saisis ton quartier ou réessaie.",
+    "coordinatesReceived": "Position reçue : {latitude}, {longitude}. Ajoute aussi un repère.",
+    "footer": "La saisie est libre ; la zone de livraison devra être vérifiée avant toute commande.",
+    "footerLocation": "Partout au Cameroun · disponibilité à confirmer"
+  }
+}

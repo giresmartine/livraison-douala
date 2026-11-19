@@ -1,0 +1,30 @@
+{
+  "home": {
+    "brand": "Delivery",
+    "city": "Douala, Cameroon",
+    "serviceArea": "Neighbourhoods across Cameroon",
+    "languageLabel": "Choose language",
+    "eyebrow": "Day and night, close to you",
+    "title": "Where should we deliver?",
+    "description": "Enter any city and neighbourhood in Cameroon. No preset list or GPS location is required.",
+    "metaDescription": "Enter a neighbourhood in Cameroon to continue.",
+    "availabilityNote": "You can continue with any neighbourhood in Cameroon. Actual delivery availability still needs to be checked.",
+    "addressHeading": "Your delivery address",
+    "addressHint": "Enter the city and neighbourhood where you want delivery.",
+    "addressLabel": "City and neighbourhood in Cameroon",
+    "addressPlaceholder": "For example, Bafoussam, Djeleng neighbourhood…",
+    "useLocation": "Use my location",
+    "locating": "Finding your location…",
+    "continue": "Continue",
+    "privacyNote": "Your location is requested only with your permission. You can also enter a landmark.",
+    "addressRequired": "Enter a neighbourhood or landmark to continue.",
+    "storageError": "This draft could not be saved on this device. Try again or keep your landmark handy.",
+    "draftSaved": "Address saved in this tab.",
+    "locationUnavailable": "Location is unavailable on this device. You can enter your neighbourhood.",
+    "locationDenied": "Location access was denied. Enter your neighbourhood to continue.",
+    "locationTimedOut": "Finding your location took too long. Enter your neighbourhood or try again.",
+    "coordinatesReceived": "Location received: {latitude}, {longitude}. Add a landmark too.",
+    "footer": "Entry is unrestricted; delivery coverage must be checked before an order.",
+    "footerLocation": "Anywhere in Cameroon · availability to be confirmed"
+  }
+}
