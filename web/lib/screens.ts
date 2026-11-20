@@ -111,7 +111,7 @@ export const screens: ScreenDefinition[] = [
     { next: ["S-10", "S-11", "S-12", "S-13"] },
   ),
   defineScreen(
-    "S-09", "client", client, "/pharmacie/aperçu", { fr: "Pharmacie", en: "Pharmacy" },
+    "S-09", "client", client, "/pharmacie/apercu", { fr: "Pharmacie", en: "Pharmacy" },
     { fr: "Page de pharmacie ; seuls les articles non médicaux sont ajoutables directement.", en: "Pharmacy page; only non-medicine items can be added directly." },
     [
       { fr: "Aucun médicament ne sera vendu directement par la plateforme.", en: "The platform will not sell medicines directly." },

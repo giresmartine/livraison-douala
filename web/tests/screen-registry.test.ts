@@ -27,6 +27,8 @@ describe("screen registry", () => {
   it("resolves the documented pharmacy and password-reset aliases", () => {
     expect(getScreenByPath("adresse/confirmer")?.id).toBe("S-02");
     expect(getScreenByPath("e/restaurant-apercu", true)?.id).toBe("S-09");
+    expect(getScreenById("S-09")?.href).toBe("/pharmacie/apercu");
+    expect(getScreenByPath("pharmacie/apercu")?.id).toBe("S-09");
     expect(getScreenByPath("mot-de-passe/reinitialiser")?.id).toBe("S-35");
   });
 
