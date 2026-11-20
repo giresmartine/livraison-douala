@@ -306,9 +306,9 @@ function NoCoverage({ locale }: { locale: Locale }) {
   return (
     <section className="ps-sheet">
       <div className="ps-empty-icon" aria-hidden="true"><Icon name="pin" /></div>
-      <h1>{tx(locale, "Pas encore d’enseigne ici", "No shop here yet")}</h1>
-      <p className="ps-lead">{tx(locale, "Les enseignes et zones de livraison apparaîtront ici après vérification.", "Verified shops and delivery areas will appear here once they are confirmed.")}</p>
-      <Link className="ps-primary" href={`/${locale}/restaurants`}>{tx(locale, "Voir les enseignes vérifiées", "Browse verified shops")}</Link>
+      <h1>{tx(locale, "Nous livrons uniquement à Douala pour le moment", "We only deliver in Douala for now")}</h1>
+      <p className="ps-lead">{tx(locale, "Tu peux saisir librement n’importe quel quartier de Douala.", "You can freely enter any neighbourhood in Douala.")}</p>
+      <Link className="ps-primary" href={`/${locale}`}>{tx(locale, "Saisir une adresse à Douala", "Enter a Douala address")}</Link>
     </section>
   );
 }

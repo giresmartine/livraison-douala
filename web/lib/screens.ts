@@ -35,11 +35,11 @@ const operator = { fr: "Agent / Admin", en: "Agent / Admin" };
 export const screens: ScreenDefinition[] = [
   defineScreen(
     "S-01", "client", client, "/", { fr: "Choisir une adresse", en: "Choose an address" },
-    { fr: "Recherche quartier, rue ou repère, et localisation facultative avec accord explicite.", en: "Search by neighbourhood, street or landmark, with optional location after consent." },
+    { fr: "Ville fixée à Douala ; quartier et rue ou repère en saisie libre. Le GPS facultatif est vérifié dans la zone de Douala.", en: "City fixed to Douala; neighbourhood and street or landmark entered freely. Optional GPS is checked against Douala coverage." },
     [
       { fr: "Aucune enseigne n’est affichée avant la sélection d’une adresse.", en: "No shops are shown until an address is selected." },
-      { fr: "Le GPS est facultatif. Le refus n’empêche pas la saisie manuelle.", en: "GPS is optional. Refusing access does not prevent manual entry." },
-      { fr: "Quartiers fréquents et adresses récentes apparaîtront après connexion aux données validées.", en: "Frequent neighbourhoods and recent addresses will appear once verified data is connected." },
+      { fr: "Tout quartier de Douala reste accepté même s’il est absent des suggestions ; la liste ne bloque jamais la saisie.", en: "Any Douala neighbourhood is accepted even if missing from suggestions; the list never blocks manual entry." },
+      { fr: "Les quartiers fréquents et adresses récentes sont réservés aux clients connectés ; le GPS est facultatif.", en: "Frequent neighbourhoods and recent addresses are only for signed-in customers; GPS is optional." },
     ],
     { next: ["S-02"] },
   ),
@@ -53,12 +53,11 @@ export const screens: ScreenDefinition[] = [
     { next: ["S-03", "S-04"], sensitive: true },
   ),
   defineScreen(
-    "S-03", "client", client, "/zone-indisponible", { fr: "Pas encore de commerce disponible", en: "No shops available yet" },
-    { fr: "État affiché lorsqu’aucun commerce activé ne dessert cette adresse.", en: "Shown when no activated shop serves this address." },
+    "S-03", "client", client, "/zone-indisponible", { fr: "Livraison uniquement à Douala", en: "Delivery in Douala only" },
+    { fr: "État affiché lorsque la position GPS est hors de la zone de livraison de Douala.", en: "Shown when GPS coordinates fall outside Douala delivery coverage." },
     [
-      { fr: "Les enseignes prospects ne sont pas présentées comme partenaires.", en: "Prospective shops are not presented as partners." },
-      { fr: "Le signalement de quartier par WhatsApp dépend d’un numéro officiel à configurer.", en: "Reporting a neighbourhood through WhatsApp requires an official number." },
-      { fr: "Les quartiers voisins et le nombre de commerces ouverts nécessitent des données en direct.", en: "Nearby neighbourhoods and open-shop counts require live data." },
+      { fr: "Le message précise : « Nous livrons uniquement à Douala pour le moment ».", en: "The message says: “We only deliver in Douala for now”." },
+      { fr: "Une adresse saisie manuellement à Douala n’est jamais refusée parce que son quartier manque à la liste.", en: "A manually entered Douala address is never rejected because its neighbourhood is missing from the list." },
     ],
     { next: ["S-01", "S-05"] },
   ),

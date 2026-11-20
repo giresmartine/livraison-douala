@@ -4,7 +4,31 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { z } from "zod";
+import { DeliveryAddressFields } from "@/components/delivery-address-fields";
 import { Icon } from "@/components/ui/icon";
+import { doualaCoverage, isWithinDoualaCoverage, validateDeliveryAddress } from "@/lib/config/coverage";
+import type { Coordinates } from "@/lib/config/coverage";
+
+const savedAddressDraftSchema = z.object({
+  neighborhood: z.string().optional(),
+  landmark: z.string().optional(),
+  coordinates: z.object({
+    latitude: z.number(),
+    longitude: z.number(),
+  }).optional(),
+});
+
+function parseSavedAddressDraft(value: string) {
+  try {
+    const parsed = savedAddressDraftSchema.safeParse(JSON.parse(value));
+    if (parsed.success) return parsed.data;
+  } catch {
+    return { neighborhood: value };
+  }
+
+  return { neighborhood: value };
+}
 
 type Feedback = {
   kind: "success" | "error";
@@ -15,7 +39,9 @@ export function AddressEntry() {
   const t = useTranslations("home");
   const locale = useLocale();
   const router = useRouter();
-  const [address, setAddress] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [landmark, setLandmark] = useState("");
+  const [coordinates, setCoordinates] = useState<Coordinates>();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
@@ -25,7 +51,12 @@ export function AddressEntry() {
     try {
       const draft = sessionStorage.getItem("delivery-address-draft");
       if (draft) {
-        frameId = window.requestAnimationFrame(() => setAddress(draft));
+        const parsed = parseSavedAddressDraft(draft);
+        frameId = window.requestAnimationFrame(() => {
+          setNeighborhood(parsed.neighborhood ?? "");
+          setLandmark(parsed.landmark ?? "");
+          setCoordinates(parsed.coordinates);
+        });
       }
     } catch {
       frameId = window.requestAnimationFrame(() => {
@@ -40,15 +71,30 @@ export function AddressEntry() {
 
   function saveDraft(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const value = address.trim();
+    const draft = {
+      city: doualaCoverage.city,
+      neighborhood: neighborhood.trim(),
+      landmark: landmark.trim(),
+      coordinates,
+    };
+    const validation = validateDeliveryAddress(draft);
 
-    if (!value) {
+    if (!validation.accepted) {
+      if (validation.reason === "outside-bounds") {
+        router.push(`/${locale}/zone-indisponible`);
+        return;
+      }
       setFeedback({ kind: "error", message: t("addressRequired") });
       return;
     }
 
     try {
-      sessionStorage.setItem("delivery-address-draft", value);
+      sessionStorage.setItem("delivery-address-draft", JSON.stringify(draft));
+      if (coordinates) {
+        sessionStorage.setItem("delivery-address-location", JSON.stringify(coordinates));
+      } else {
+        sessionStorage.removeItem("delivery-address-location");
+      }
     } catch {
       setFeedback({ kind: "error", message: t("storageError") });
       return;
@@ -68,9 +114,19 @@ export function AddressEntry() {
 
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
+        const currentCoordinates = {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        };
+        if (!isWithinDoualaCoverage(currentCoordinates)) {
+          setIsLocating(false);
+          router.push(`/${locale}/zone-indisponible`);
+          return;
+        }
+
         const latitude = coords.latitude.toFixed(5);
         const longitude = coords.longitude.toFixed(5);
-        setAddress(`${latitude}, ${longitude}`);
+        setCoordinates(currentCoordinates);
         setFeedback({
           kind: "success",
           message: t("coordinatesReceived", { latitude, longitude }),
@@ -94,20 +150,28 @@ export function AddressEntry() {
 
   return (
     <form className="address-form" onSubmit={saveDraft}>
-      <label className="field-label" htmlFor="delivery-address">
-        {t("addressLabel")}
-      </label>
-      <input
-        autoComplete="street-address"
-        className="address-input"
-        id="delivery-address"
-        maxLength={180}
-        onChange={(event) => {
-          setAddress(event.target.value);
+      <div className="address-field">
+        <label className="field-label" htmlFor="delivery-city">
+          {t("cityLabel")}
+        </label>
+        <input
+          className="address-input"
+          id="delivery-city"
+          readOnly
+          value={doualaCoverage.city}
+        />
+      </div>
+      <DeliveryAddressFields
+        landmark={landmark}
+        neighborhood={neighborhood}
+        onLandmarkChange={(value) => {
+          setLandmark(value);
           setFeedback(null);
         }}
-        placeholder={t("addressPlaceholder")}
-        value={address}
+        onNeighborhoodChange={(value) => {
+          setNeighborhood(value);
+          setFeedback(null);
+        }}
       />
       <button
         className="location-button"
