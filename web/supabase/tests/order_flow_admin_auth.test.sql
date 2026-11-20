@@ -85,12 +85,21 @@ select set_config(
 );
 select ok(not public.admin_quote_session_is_recent(), 'missing AMR is rejected even with a fresh iat');
 
-insert into auth.mfa_factors (id, user_id, factor_type, status)
+insert into auth.mfa_factors (
+  id,
+  user_id,
+  factor_type,
+  status,
+  created_at,
+  updated_at
+)
 values (
   '00000000-0000-4000-8000-000000000201',
   '00000000-0000-4000-8000-000000000101',
   'totp',
-  'verified'
+  'verified',
+  now(),
+  now()
 );
 select set_config(
   'request.jwt.claims',
