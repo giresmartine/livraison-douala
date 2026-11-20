@@ -11,9 +11,9 @@ export default defineConfig({
     ...devices["Desktop Chrome"],
   },
   webServer: {
-    command: "npm run start -- --hostname 127.0.0.1 --port 3101",
+    command: `${process.env.E2E_BUILD_COMMAND ?? "npm run build"} && npm run start -- --hostname 127.0.0.1 --port 3101`,
     url: "http://127.0.0.1:3101/fr",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });
