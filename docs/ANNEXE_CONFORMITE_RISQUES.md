@@ -48,6 +48,7 @@
 | D-12 | Un agent de zone de nuit valide les vocaux ; un agent répond au WhatsApp | Validation humaine du vocal en V1 |
 | D-13 | Gratuit en test, plans payants en production | Pause et absence de sauvegardes sur l'offre gratuite ; usage commercial |
 | D-14 | Style : Ciel + navigation Bulles + anneau Nuit néon | Cohérence, micro mis en avant ; à confirmer |
+| D-15 | Le proxy rafraîchit la session sans lire `profiles` à chaque navigation | Réduire les requêtes ; le statut reste contrôlé par `requireRole` et `getRoleDestination` |
 
 ## A.4 Questions ouvertes
 
@@ -61,4 +62,3 @@
 - Avis juridique sur les données, l'alcool, les ordonnances et les CGV.
 - Décision d'infrastructure de production (plans payants ou alternatives) avant le lancement.
 - Recrutement, horaires et formation de l'agent de zone de nuit.
-

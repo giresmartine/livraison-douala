@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { isAuthenticationEnabled, publicEnvironment } from "@/lib/env";
 import { getRoleDestination } from "@/lib/auth";
+import { getAuthCallbackUrl } from "@/lib/auth-callback";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AuthFormState = {
@@ -102,7 +103,7 @@ export async function signUpAction(
     email: email.data,
     password: password.data,
     options: {
-      emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(`/${locale}/accueil`)}`,
+      emailRedirectTo: getAuthCallbackUrl(siteUrl, locale, `/${locale}/accueil`),
       data: {
         full_name: fullName.data,
         phone: phone.data ?? null,
@@ -143,7 +144,7 @@ export async function requestPasswordResetAction(
   const siteUrl = getSiteUrl();
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email.data, {
-    redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(`/${locale}/mot-de-passe/reinitialiser`)}`,
+    redirectTo: getAuthCallbackUrl(siteUrl, locale, `/${locale}/mot-de-passe/reinitialiser`),
   });
 
   if (error) {

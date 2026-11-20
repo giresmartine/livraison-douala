@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { roleDestinations } from "../lib/auth";
 import { getScreenById, getScreenByPath, screens } from "../lib/screens";
 
 describe("screen registry", () => {
@@ -27,5 +28,14 @@ describe("screen registry", () => {
     expect(getScreenByPath("adresse/confirmer")?.id).toBe("S-02");
     expect(getScreenByPath("e/restaurant-apercu", true)?.id).toBe("S-09");
     expect(getScreenByPath("mot-de-passe/reinitialiser")?.id).toBe("S-35");
+  });
+
+  it("maps every role destination to a registered screen", () => {
+    for (const [role, destination] of Object.entries(roleDestinations)) {
+      expect(
+        getScreenByPath(destination.replace(/^\//, "")),
+        `${role} -> ${destination}`,
+      ).toBeDefined();
+    }
   });
 });
