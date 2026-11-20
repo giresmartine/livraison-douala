@@ -1,0 +1,1 @@
+(()=>{const p=new Intl.DateTimeFormat("en-GB",{hour:"2-digit",minute:"2-digit",hourCycle:"h23",timeZone:"Africa/Douala"}).formatToParts(new Date());const h=Number(p.find(x=>x.type==="hour").value);const m=Number(p.find(x=>x.type==="minute").value);const t=h*60+m;document.documentElement.classList.toggle("theme-night",t>=1110||t<330)})();

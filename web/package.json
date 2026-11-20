@@ -4,8 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/prepare-static-csp.mjs",
     "build": "next build",
+    "postbuild": "node scripts/verify-static-csp.mjs",
+    "prebuild:webpack": "node scripts/prepare-static-csp.mjs --webpack",
     "build:webpack": "next build --webpack",
+    "postbuild:webpack": "node scripts/verify-static-csp.mjs",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

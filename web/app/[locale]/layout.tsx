@@ -3,10 +3,10 @@ import type { ReactNode } from "react";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import Script from "next/script";
 import { ThemeSchedule } from "@/components/theme-schedule";
 import { routing } from "@/i18n/routing";
 import { publicEnvironment } from "@/lib/env";
-import { themeBootstrapScript } from "@/lib/theme-schedule";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
@@ -54,7 +54,7 @@ export default async function LocaleLayout({
           type="font/woff2"
           crossOrigin="anonymous"
         />
-        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+        <Script src="/theme-bootstrap.js" strategy="beforeInteractive" />
       </head>
       <body>
         <ThemeSchedule />

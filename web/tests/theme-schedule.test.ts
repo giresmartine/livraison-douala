@@ -1,5 +1,12 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { isNightInDouala, themeBootstrapScript } from "../lib/theme-schedule";
+
+const themeBootstrapFile = readFileSync(
+  join(process.cwd(), "public", "theme-bootstrap.js"),
+  "utf8",
+).trim();
 
 describe("Douala theme schedule", () => {
   it.each([
@@ -11,8 +18,9 @@ describe("Douala theme schedule", () => {
     expect(isNightInDouala(new Date(instant))).toBe(expected);
   });
 
-  it("runs the same schedule in the pre-render bootstrap script", () => {
+  it("keeps the blocking external bootstrap in sync with the schedule", () => {
     expect(themeBootstrapScript).toContain('timeZone:"Africa/Douala"');
     expect(themeBootstrapScript).toContain("t>=1110||t<330");
+    expect(themeBootstrapFile.replace(/;$/, "")).toBe(themeBootstrapScript);
   });
 });
