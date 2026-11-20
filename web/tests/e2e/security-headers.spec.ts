@@ -19,7 +19,11 @@ test("CSP permits hydration on a static page and an already-dynamic auth page", 
   expect(staticScriptPolicy).not.toContain("'unsafe-inline'");
 
   await page.getByRole("button", { name: "Continuer" }).click();
-  await expect(page.getByRole("status")).toContainText("Saisis");
+  await expect(
+    page.getByText("Saisis ton quartier et une rue ou un repère pour continuer.", {
+      exact: true,
+    }),
+  ).toBeVisible();
 
   const authResponse = await page.goto("/fr/connexion", { waitUntil: "load" });
   const authPolicy = authResponse?.headers()["content-security-policy"] ?? "";
