@@ -32,6 +32,10 @@ Le site est servi à `http://localhost:3000` et redirige vers `/fr`. La version 
 
 Les variables de `.env.example` sont optionnelles pour cet écran. Copie ce fichier vers `.env.local` si tu souhaites définir le nom de marque. La clé `SUPABASE_SERVICE_ROLE_KEY`, lorsqu’elle sera utilisée, doit rester exclusivement côté serveur.
 
+### Polices locales
+
+Inter (texte) et Fraunces (titres) proviennent des paquets `@fontsource-variable/inter` et `@fontsource-variable/fraunces`. Seuls les deux fichiers WOFF2 latins sont livrés et préchargés localement (115 560 octets au total) ; leurs licences OFL sont conservées dans `public/fonts/`.
+
 ### Tests navigateur avec authentification
 
 `npm run test:e2e` démarre une instance Supabase locale si nécessaire, provisionne des comptes fictifs client/partenaire/livreur/admin et lance l'application avec Supabase Auth réellement activé. Les parcours sensibles sont visités par un compte du rôle autorisé ; un test vérifie également qu'un client ne peut pas ouvrir un écran partenaire. Aucun mécanisme de contournement de `requireRole` n'est utilisé. Docker doit être disponible pour démarrer Supabase ; la pile démarrée par la commande est arrêtée à la fin.
