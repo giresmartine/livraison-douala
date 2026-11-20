@@ -1,9 +1,17 @@
 import "server-only";
 
+import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
+const userIdSchema = z.string().uuid();
+
 export async function suspendAccount(userId: string) {
+  const parsedUserId = userIdSchema.safeParse(userId);
+  if (!parsedUserId.success) {
+    throw new Error("A valid account UUID is required.");
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -41,10 +49,14 @@ export async function suspendAccount(userId: string) {
   if (!actorRoles.some((entry) => entry.role === "admin")) {
     throw new Error("Administrator access is required.");
   }
+  if (parsedUserId.data === user.id) {
+    throw new Error("Administrators cannot suspend their own account.");
+  }
 
   const admin = createSupabaseAdminClient();
   const { error } = await admin.rpc("suspend_account_and_revoke_sessions", {
-    target_user_id: userId,
+    target_user_id: parsedUserId.data,
+    actor_user_id: user.id,
   });
 
   if (error) {
