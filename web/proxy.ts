@@ -3,7 +3,6 @@ import createMiddleware from "next-intl/middleware";
 import type { NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import {
-  isAuthenticationEnabled,
   isSupabaseConfigured,
   publicEnvironment,
 } from "./lib/env";
@@ -33,22 +32,7 @@ export default async function proxy(request: NextRequest) {
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (user && isAuthenticationEnabled) {
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("status")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Could not verify authenticated user status.");
-    } else if (!profile || profile.status !== "active") {
-      const { error: signOutError } = await supabase.auth.signOut();
-      if (signOutError) console.error("Could not revoke an inactive account session.");
-    }
-  }
+  await supabase.auth.getUser();
 
   return response;
 }
