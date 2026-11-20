@@ -24,3 +24,9 @@ test("all registered routes fit the viewport at mobile and tablet widths", async
     }
   }
 });
+
+test("unknown routes return an HTTP 404", async ({ page }) => {
+  const response = await page.goto("/fr/nimporte-quoi", { waitUntil: "load" });
+
+  expect(response?.status()).toBe(404);
+});

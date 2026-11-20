@@ -1,6 +1,6 @@
-export default function ScreenPreviewLoading() {
+export function StorefrontLoading() {
   return (
-    <main className="page-shell preview-shell" aria-busy="true">
+    <main className="storefront-page page-shell" aria-busy="true" aria-label="Chargement">
       <div className="skeleton skeleton-header" />
       <div className="skeleton skeleton-title" />
       <div className="skeleton skeleton-copy" />
