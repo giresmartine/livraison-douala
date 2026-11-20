@@ -4,10 +4,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AppRole = "client" | "partner" | "courier" | "zone_agent" | "admin";
 
-const roleDestinations: Record<AppRole, string> = {
+export const roleDestinations: Record<AppRole, string> = {
   client: "/accueil",
-  partner: "/partenaire/commandes",
-  courier: "/livreur/courses",
+  partner: "/pro",
+  courier: "/livreur",
   zone_agent: "/ops",
   admin: "/ops",
 };
