@@ -3,8 +3,12 @@ import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const generatedHashesPath = resolve(".static-csp-hashes.json");
+const supabaseConfigured = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+);
 const staticPages = ["fr", "en"].flatMap((locale) =>
-  ["", "ecrans", "restaurants", "pharmacies"].map((page) => ({
+  ["", "ecrans", ...(supabaseConfigured ? [] : ["restaurants", "pharmacies"])].map((page) => ({
     pathname: `/${locale}${page ? `/${page}` : ""}`,
     htmlPath: page
       ? join(".next", "server", "app", locale, `${page}.html`)

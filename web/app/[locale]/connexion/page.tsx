@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/screens";
 import { AuthForm } from "@/components/auth-form";
-import { isAuthenticationEnabled } from "@/lib/env";
+import { isAuthenticationEnabled, publicEnvironment } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +18,7 @@ export default async function SignInPage({
       mode="sign-in"
       nextPath={query.next}
       authenticationEnabled={isAuthenticationEnabled}
+      turnstileSiteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
     />
   );
 }

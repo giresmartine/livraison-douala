@@ -20,6 +20,16 @@ enabled = true
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["http://127.0.0.1:3000"]
 
+[auth.captcha]
+enabled = true
+provider = "turnstile"
+secret = "1x0000000000000000000000000000000AA"
+
+[auth.rate_limit]
+email_sent = 3
+sign_in_sign_ups = 10
+token_verifications = 10
+
 [db.seed]
 enabled = true
 sql_paths = ["./seed.sql"]

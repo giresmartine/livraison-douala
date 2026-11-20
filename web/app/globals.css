@@ -405,6 +405,25 @@ h1 {
   gap: 17px;
 }
 
+.turnstile-widget {
+  min-height: 65px;
+}
+
+.turnstile-error {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.turnstile-retry {
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .auth-fields {
   display: grid;
   min-width: 0;

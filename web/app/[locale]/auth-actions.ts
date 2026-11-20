@@ -14,6 +14,7 @@ export type AuthFormState = {
 
 const emailSchema = z.string().trim().email().max(254);
 const passwordSchema = z.string().min(12).max(128);
+const captchaTokenSchema = z.string().trim().min(1).max(2048);
 const localeSchema = z.enum(["fr", "en"]);
 
 function getLocale(value: FormDataEntryValue | null) {
@@ -42,6 +43,12 @@ function safeNextPath(value: FormDataEntryValue | null, locale: string) {
   return value;
 }
 
+function getCaptchaError(locale: string) {
+  return locale === "fr"
+    ? "La vérification anti-robot a échoué. Réessaie."
+    : "Bot verification failed. Please try again.";
+}
+
 export async function signInAction(
   _previousState: AuthFormState,
   formData: FormData,
@@ -49,9 +56,16 @@ export async function signInAction(
   const locale = getLocale(formData.get("locale"));
   const email = emailSchema.safeParse(formData.get("email"));
   const password = z.string().min(1).max(128).safeParse(formData.get("password"));
+  const captchaToken = captchaTokenSchema.safeParse(formData.get("captchaToken"));
 
   if (!email.success || !password.success) {
     return { error: locale === "fr" ? "Vérifie ton email et ton mot de passe." : "Check your email and password." };
+  }
+  if (
+    !captchaToken.success ||
+    !publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  ) {
+    return { error: getCaptchaError(locale) };
   }
   if (!isAuthenticationEnabled) {
     return { error: locale === "fr" ? "La connexion au service de comptes n’est pas encore configurée." : "The account service is not configured yet." };
@@ -61,6 +75,7 @@ export async function signInAction(
   const { error } = await supabase.auth.signInWithPassword({
     email: email.data,
     password: password.data,
+    options: { captchaToken: captchaToken.data },
   });
 
   if (error) {
@@ -79,6 +94,7 @@ export async function signUpAction(
   const fullName = z.string().trim().min(2).max(120).safeParse(formData.get("fullName"));
   const email = emailSchema.safeParse(formData.get("email"));
   const password = passwordSchema.safeParse(formData.get("password"));
+  const captchaToken = captchaTokenSchema.safeParse(formData.get("captchaToken"));
   const ageConfirmed = formData.get("ageConfirmed") === "on";
   const legalAccepted = formData.get("legalAccepted") === "on";
   const phone = z.string().trim().max(30).optional().safeParse(formData.get("phone") || undefined);
@@ -93,6 +109,12 @@ export async function signUpAction(
   ) {
     return { error: locale === "fr" ? "Complète les champs requis, utilise un mot de passe d’au moins 12 caractères et accepte les conditions." : "Complete the required fields, use a password of at least 12 characters, and accept the terms." };
   }
+  if (
+    !captchaToken.success ||
+    !publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  ) {
+    return { error: getCaptchaError(locale) };
+  }
   if (!isAuthenticationEnabled) {
     return { error: locale === "fr" ? "La création de compte n’est pas encore configurée." : "Account creation is not configured yet." };
   }
@@ -104,6 +126,7 @@ export async function signUpAction(
     password: password.data,
     options: {
       emailRedirectTo: getAuthCallbackUrl(siteUrl, locale, `/${locale}/accueil`),
+      captchaToken: captchaToken.data,
       data: {
         full_name: fullName.data,
         phone: phone.data ?? null,
@@ -133,9 +156,16 @@ export async function requestPasswordResetAction(
 ): Promise<AuthFormState> {
   const locale = getLocale(formData.get("locale"));
   const email = emailSchema.safeParse(formData.get("email"));
+  const captchaToken = captchaTokenSchema.safeParse(formData.get("captchaToken"));
 
   if (!email.success) {
     return { error: locale === "fr" ? "Saisis une adresse email valide." : "Enter a valid email address." };
+  }
+  if (
+    !captchaToken.success ||
+    !publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  ) {
+    return { error: getCaptchaError(locale) };
   }
   if (!isAuthenticationEnabled) {
     return { error: locale === "fr" ? "La récupération de compte n’est pas encore configurée." : "Account recovery is not configured yet." };
@@ -145,6 +175,7 @@ export async function requestPasswordResetAction(
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email.data, {
     redirectTo: getAuthCallbackUrl(siteUrl, locale, `/${locale}/mot-de-passe/reinitialiser`),
+    captchaToken: captchaToken.data,
   });
 
   if (error) {

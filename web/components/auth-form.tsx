@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import type { AuthFormState } from "@/app/[locale]/auth-actions";
 import {
   requestPasswordResetAction,
@@ -10,6 +10,7 @@ import {
   updatePasswordAction,
 } from "@/app/[locale]/auth-actions";
 import type { Locale } from "@/lib/screens";
+import { TurnstileField } from "@/components/turnstile-field";
 
 type AuthMode = "sign-in" | "sign-up" | "forgot" | "reset";
 
@@ -20,11 +21,13 @@ export function AuthForm({
   mode,
   nextPath,
   authenticationEnabled,
+  turnstileSiteKey,
 }: {
   locale: Locale;
   mode: AuthMode;
   nextPath?: string;
   authenticationEnabled: boolean;
+  turnstileSiteKey?: string;
 }) {
   const english = locale === "en";
   const action = mode === "sign-in"
@@ -35,6 +38,18 @@ export function AuthForm({
         ? requestPasswordResetAction
         : updatePasswordAction;
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
+  const wasPending = useRef(false);
+  const captchaRequired = mode !== "reset";
+
+  useEffect(() => {
+    if (wasPending.current && !pending) {
+      setCaptchaToken("");
+      setCaptchaResetSignal((signal) => signal + 1);
+    }
+    wasPending.current = pending;
+  }, [pending]);
 
   const copy = {
     title: {
@@ -137,6 +152,24 @@ export function AuthForm({
           )}
           </fieldset>
 
+          {captchaRequired && (
+            <input name="captchaToken" type="hidden" value={captchaToken} />
+          )}
+          {captchaRequired && authenticationEnabled && turnstileSiteKey && (
+            <TurnstileField
+              locale={locale}
+              onTokenChange={setCaptchaToken}
+              resetSignal={captchaResetSignal}
+              siteKey={turnstileSiteKey}
+            />
+          )}
+          {captchaRequired && authenticationEnabled && !turnstileSiteKey && (
+            <p className="form-feedback" data-kind="error" role="status">
+              {english
+                ? "Bot verification is not configured. Please try again later."
+                : "La vérification anti-robot n’est pas configurée. Réessaie plus tard."}
+            </p>
+          )}
           {!authenticationEnabled && (
             <p className="form-feedback" data-kind="error" role="status">
               {english
@@ -146,7 +179,15 @@ export function AuthForm({
           )}
           {state.error && <p className="form-feedback" data-kind="error" role="alert">{state.error}</p>}
           {state.success && <p className="form-feedback" role="status">{state.success}</p>}
-          <button className="continue-button" disabled={pending || !authenticationEnabled} type="submit">
+          <button
+            className="continue-button"
+            disabled={
+              pending ||
+              !authenticationEnabled ||
+              (captchaRequired && (!turnstileSiteKey || !captchaToken))
+            }
+            type="submit"
+          >
             {pending ? copy.pending : copy.submit}
           </button>
         </form>

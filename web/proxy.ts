@@ -11,7 +11,10 @@ import {
 const handleI18nRouting = createMiddleware(routing);
 
 export default async function proxy(request: NextRequest) {
-  const nonce = isPublicStaticPath(request.nextUrl.pathname)
+  const nonce = isPublicStaticPath(
+    request.nextUrl.pathname,
+    isSupabaseConfigured,
+  )
     ? undefined
     : btoa(crypto.randomUUID());
   const requestHeaders = new Headers(request.headers);
@@ -21,6 +24,9 @@ export default async function proxy(request: NextRequest) {
     contentSecurityPolicy = createContentSecurityPolicy({
       nonce,
       supabaseUrl: publicEnvironment.NEXT_PUBLIC_SUPABASE_URL,
+      turnstileEnabled: Boolean(
+        publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+      ),
     });
     requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
   }

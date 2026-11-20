@@ -12,6 +12,7 @@ const publicEnvironmentSchema = z.object({
     z.string().url().optional(),
   ),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: optionalValue,
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: optionalValue,
   NEXT_PUBLIC_SITE_URL: z.preprocess(
     (value) => (value === "" ? undefined : value),
     z.string().url().optional(),
@@ -35,6 +36,7 @@ export const publicEnvironment = publicEnvironmentSchema.parse({
   NEXT_PUBLIC_BRAND_NAME: process.env.NEXT_PUBLIC_BRAND_NAME,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   NEXT_PUBLIC_TERMS_VERSION: process.env.NEXT_PUBLIC_TERMS_VERSION,
   NEXT_PUBLIC_PRIVACY_VERSION: process.env.NEXT_PUBLIC_PRIVACY_VERSION,

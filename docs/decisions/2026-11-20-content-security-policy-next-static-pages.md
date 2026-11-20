@@ -6,7 +6,8 @@ Next.js inclut des scripts inline de transport RSC dans le HTML, en plus du scri
 
 ## Décision
 
-- Les routes publiques pré-rendues (`/fr`, `/en`, `/ecrans`, `/restaurants`, `/pharmacies`) utilisent une CSP avec des hash SHA-256 générés automatiquement à partir de leur HTML par un pré-build. Le build final vérifie que tous les scripts inline correspondent aux hash calculés avant d'accepter sa sortie.
+- Les routes publiques pré-rendues utilisent une CSP avec des hash SHA-256 générés automatiquement à partir de leur HTML par un pré-build. Le build final vérifie que tous les scripts inline correspondent aux hash calculés avant d'accepter sa sortie.
+- `/restaurants` et `/pharmacies` restent statiques si Supabase n'est pas configuré; lorsqu'il l'est, ces pages lisent le catalogue côté serveur et sont déjà dynamiques pour cette raison. Elles reçoivent alors le nonce du proxy, sans que la CSP ne rende une page statique dynamique.
 - Les routes dynamiques reçoivent un nonce aléatoire dans le proxy. La CSP est transmise à Next.js pour l'ajouter aux scripts de rendu, puis renvoyée au navigateur. Ces routes n'autorisent pas `unsafe-inline`.
 - Le script du thème est un fichier JavaScript local bloquant dans le `<head>` : il s'exécute avant le rendu du contenu, reste autorisé par `script-src 'self'` et n'exige ni nonce global ni hash manuel.
 - Les en-têtes communs refusent les objets et les iframes, limitent l'origine de connexion à Supabase configuré, et désactivent la caméra, le micro et les paiements.

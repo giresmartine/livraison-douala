@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/screens";
 import { AuthForm } from "@/components/auth-form";
-import { isAuthenticationEnabled } from "@/lib/env";
+import { isAuthenticationEnabled, publicEnvironment } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -10,5 +10,12 @@ export default async function ResetPasswordPage({
   params: Promise<{ locale: Locale }>;
 }) {
   const { locale } = await params;
-  return <AuthForm locale={locale} mode="reset" authenticationEnabled={isAuthenticationEnabled} />;
+  return (
+    <AuthForm
+      locale={locale}
+      mode="reset"
+      authenticationEnabled={isAuthenticationEnabled}
+      turnstileSiteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+    />
+  );
 }

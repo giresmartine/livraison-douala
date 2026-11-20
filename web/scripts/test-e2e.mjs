@@ -134,6 +134,7 @@ try {
     NEXT_PUBLIC_SITE_URL: baseURL,
     NEXT_PUBLIC_TERMS_VERSION: "e2e-test",
     NEXT_PUBLIC_PRIVACY_VERSION: "e2e-test",
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
     E2E_BUILD_COMMAND: buildCommand,
   };
   const result = spawnSync(

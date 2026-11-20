@@ -29,6 +29,13 @@ test("CSP permits hydration on a static page and an already-dynamic auth page", 
   expect(authScriptPolicy).toMatch(/'nonce-[^']+'/);
   expect(authScriptPolicy).not.toContain("'unsafe-inline'");
 
+  if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+    expect(authScriptPolicy).toContain("https://challenges.cloudflare.com");
+    await expect(page.locator('input[name="captchaToken"]')).toHaveValue(/.+/, {
+      timeout: 30_000,
+    });
+  }
+
   const signInButton = page.getByRole("button", { name: "Se connecter" });
   if (await signInButton.isEnabled()) {
     await signInButton.click();
