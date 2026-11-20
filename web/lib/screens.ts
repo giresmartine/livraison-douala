@@ -475,7 +475,7 @@ export const screens: ScreenDefinition[] = [
     "S-61", "operations", operator, "/ops/commandes", { fr: "Commandes et dispatch", en: "Orders and dispatch" },
     { fr: "Filtrer par zone et statut ; affecter un livreur et suivre les transitions autorisées.", en: "Filter by zone and status; assign a courier and track allowed transitions." },
     [
-      { fr: "Les transitions passent par `transition_order`.", en: "Transitions go through `transition_order`." },
+      { fr: "Les changements de devis passent par les actions serveur autorisées, avec contrôle du rôle et de la session.", en: "Quote changes use authorized server actions with role and session checks." },
       { fr: "La carte et le suivi ne s’ouvrent que pour les courses actives.", en: "Maps and tracking are available only for active deliveries." },
     ],
     { next: ["S-60", "S-67", "S-68"], sensitive: true },

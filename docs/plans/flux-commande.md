@@ -11,7 +11,7 @@ Ce plan et son implémentation ont été validés par GIRES le 21 novembre 2026.
 | `quote_accepted` | Acceptation validée par la base | Aucun paiement, transmission au partenaire ou démarrage de livraison dans ce bloc | Terminal dans ce périmètre. |
 | `cancelled` | Annulation, refus ou expiration | `cancel_reason` distingue `customer_cancelled`, `quote_declined`, `quote_expired`, `quote_not_provided` et `quote_replaced` | Terminal, sauf réémission admin qui journalise l'annulation puis crée un nouveau devis en `awaiting_customer_confirmation` avec version incrémentée. |
 
-Toute transition de commande passe par `public.transition_order()` et une ligne autorisée de `order_transitions`. Elle écrit `order_status_history` et `audit_logs` avec acteur, statut antérieur, statut nouveau et horodatage. L'envoi du devis est atomique : frais/version et transition réussissent ensemble ou sont tous annulés. L'acceptation compare à la base le montant et la version présentés au client.
+Les transitions du cycle de commande historique passent par `public.transition_order()` et une ligne autorisée de `order_transitions`. Le flux de devis utilise exclusivement `send_order_fee_quote()`, `cancel_order_fee_quote()` et `accept_order_fee_quote()` ; l'ancienne fonction générique refuse ces statuts pour éviter de contourner les contrôles de frais, session et version. Chaque action écrit `order_status_history` et `audit_logs` avec acteur, statut antérieur, statut nouveau et horodatage. L'envoi du devis est atomique : frais/version et transition réussissent ensemble ou sont tous annulés. L'acceptation compare à la base le montant et la version présentés au client.
 
 ## Paramètres opérationnels
 
