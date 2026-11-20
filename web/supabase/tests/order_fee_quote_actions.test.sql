@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(15);
 
 insert into auth.users (
   id,
@@ -23,6 +23,23 @@ values
 
 insert into public.user_roles (user_id, role)
 values ('00000000-0000-4000-8000-000000000301', 'admin');
+
+insert into auth.mfa_factors (
+  id,
+  user_id,
+  factor_type,
+  status,
+  created_at,
+  updated_at
+)
+values (
+  '00000000-0000-4000-8000-000000000401',
+  '00000000-0000-4000-8000-000000000301',
+  'totp',
+  'verified',
+  now(),
+  now()
+);
 
 insert into public.orders (
   id,
@@ -103,14 +120,18 @@ select set_config(
   jsonb_build_object(
     'sub', '00000000-0000-4000-8000-000000000301',
     'role', 'authenticated',
-    'aal', 'aal1',
+    'aal', 'aal2',
     'iat', extract(epoch from clock_timestamp())::bigint,
     'amr', jsonb_build_array(jsonb_build_object(
-      'method', 'password',
+      'method', 'totp',
       'timestamp', extract(epoch from clock_timestamp())::bigint
     ))
   )::text,
   true
+);
+select ok(
+  public.admin_quote_session_is_recent(),
+  'fresh aal2 session for an MFA-enrolled admin passes the session gate'
 );
 select is(
   public.send_order_fee_quote('00000000-0000-4000-8000-000000000311', 2500),
