@@ -33,7 +33,7 @@
 | Frais de livraison en attente | Aucun tarif par défaut ; seul un admin fixe `delivery_fee` dans une borne configurable de 5 000 XAF. Si la configuration est absente, l'action est refusée. Le quartier libre sans zone reste `zone_id = NULL`. |
 | Devis ignoré ou erroné | Devis immuable avec version et historique ; 30 minutes pour accepter après son envoi ; commande sans devis annulée après 120 minutes. Seul `delivery_fee` est activé ; frais de service/suppléments restent désactivés. |
 | Abus ou doublons à la création | Maximum 3 commandes en attente et 10 soumissions par compte par heure ; idempotence unique par utilisateur ; prix recalculés côté serveur. |
-| Compte admin compromis | Les actions de devis exigent un AMR d'authentification ≤ 900 secondes et `aal2`. À activer dans Supabase Auth et à enrôler pour chaque administrateur avant usage. |
+| Compte admin compromis | Les actions de devis exigent un AMR d'authentification ≤ 900 secondes ; `aal2` est requis dès qu'un facteur MFA est vérifié sur le compte. |
 | Accès excessif aux données de commande | Partenaire voit ses lignes et le quartier seulement ; livreur voit le contact/adresse complète uniquement pour sa course active ; les lectures sensibles admin sont auditées. Emails/SMS de devis sont hors périmètre. |
 
 ## A.3 Journal des décisions
@@ -58,7 +58,7 @@
 | D-16 | La saisie manuelle à Douala reste acceptée quelle que soit la position GPS ; le GPS utilise le polygone indicatif OSM avec un tampon de 2,5 km et un seuil de 50 km pour proposer l’écran de zone indisponible | Réduire les faux refus ; GIRES confirme la limite officielle avant le lancement |
 | D-17 | Flux sans paiement arrêté à `quote_accepted`/`cancelled` ; l'admin seul fixe un `delivery_fee` entier, plafonné par configuration ; devis versionné, immuable, 30 min ; délai de 120 min sans devis ; quotas 3 en attente et 10/h ; idempotence par compte | Décision validée par GIRES le 21 novembre 2026 ; aucun prix ou quartier tarifaire n'est inventé |
 | D-18 | Inter partout ; Fraunces retirée malgré la mention contraire de `codes/PROMPT_MAITRE.md` | La décision explicite de GIRES suit le brief UX et `web/design/tokens.css` |
-| D-19 | Les actions admin de devis sont fermées par défaut et demandent un AMR récent (≤ 900 s) et `aal2` | Écarte `iat`, qui avance au renouvellement ; MFA Supabase à configurer et enrôler avant usage |
+| D-19 | Les actions admin de devis sont fermées par défaut et demandent un AMR récent (≤ 900 s) ; `aal2` est exigé si MFA est enrôlé | Écarte `iat`, qui avance au renouvellement ; configurer MFA Supabase et enrôler les administrateurs pour activer le second facteur |
 
 ## A.4 Questions ouvertes
 
@@ -72,5 +72,5 @@
 - Avis juridique sur les données, l'alcool, les ordonnances et les CGV.
 - Décision d'infrastructure de production (plans payants ou alternatives) avant le lancement.
 - Recrutement, horaires et formation de l'agent de zone de nuit.
-- GIRES doit activer le MFA/TOTP pour les administrateurs dans le tableau de bord Supabase Auth, enrôler et vérifier un facteur pour chaque compte, puis vérifier que les jetons d'action de devis contiennent `aal2`. Tant que ce n'est pas fait, la base refusera ces actions.
+- GIRES doit activer le MFA/TOTP pour les administrateurs dans le tableau de bord Supabase Auth, enrôler et vérifier un facteur pour chaque compte, puis vérifier que les jetons d'action de devis contiennent `aal2`. Sans facteur vérifié, un AMR récent reste requis et l'action est limitée à `aal1`.
 - Les notifications de devis par email ou SMS restent à décider après ce bloc.

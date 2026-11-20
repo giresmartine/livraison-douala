@@ -25,13 +25,15 @@ Une ligne de configuration modifiable sans déploiement porte les valeurs initia
 | Commandes de devis simultanément en attente par client | 3 | Refuser la création |
 | Soumissions par compte sur une heure glissante | 10 | Refuser la création |
 | Âge maximal de réauthentification admin | 900 s (15 min) | Refuser la fixation, l'annulation et la réémission |
-| AAL minimum pour actions devis admin | `aal2` | Refuser l'action |
+| AAL minimum pour actions devis admin | `aal2` si le compte a un facteur MFA vérifié ; sinon `aal1` avec AMR récent | Refuser l'action |
 
 Les autres composantes (`service_fee`, `surcharges`, pourboire) sont désactivées et ne sont ni saisissables ni incluses dans le devis. Les montants sont des entiers XAF ; le total est égal au sous-total des lignes plus `delivery_fee`. Toutes les contraintes bloquent les montants négatifs et les totaux incohérents.
 
 ### Réauthentification admin vérifiée
 
 Le JWT d'accès Supabase expose `aal` et `amr`; la documentation des claims distingue `auth_time` dans l'ID token, pas dans le payload AccessTokenClaims GoTrue. Chaque élément `amr` contient méthode et timestamp d'authentification. GoTrue calcule les AMR depuis les enregistrements AMR de la session et sérialise leur `updated_at`, triés du plus récent au plus ancien ; le renouvellement du jeton ne rafraîchit pas cet horodatage. Le contrôle utilise le timestamp AMR le plus récent, jamais `iat`, et échoue si le tableau, la méthode ou le timestamp manque, est futur ou dépasse la fenêtre configurée. Si MFA est activé pour l'administrateur, `aal` doit aussi valoir `aal2`.
+
+La fonction détecte l'enrôlement via un facteur `auth.mfa_factors` au statut `verified` : l'admin doit alors présenter `aal2`. Sans facteur vérifié, un AMR récent avec `aal1` est accepté ; l'activation MFA et l'enrôlement des administrateurs restent à faire dans Supabase Auth pour rendre l'exigence `aal2` applicable.
 
 Sources vérifiées le 21 novembre 2026 :
 

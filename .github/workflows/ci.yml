@@ -29,5 +29,11 @@ jobs:
         working-directory: web
       - run: npm run build
         working-directory: web
+      - run: npx supabase start
+        working-directory: web
+      - run: npx supabase db reset --no-seed
+        working-directory: web
+      - run: npx supabase test db
+        working-directory: web
       - run: npm run test:e2e
         working-directory: web

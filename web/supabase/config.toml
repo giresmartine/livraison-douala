@@ -31,5 +31,4 @@ sign_in_sign_ups = 10
 token_verifications = 10
 
 [db.seed]
-enabled = true
-sql_paths = ["./seed.sql"]
+enabled = false
