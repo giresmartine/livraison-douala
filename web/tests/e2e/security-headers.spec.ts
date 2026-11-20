@@ -18,12 +18,10 @@ test("CSP permits hydration on a static page and an already-dynamic auth page", 
   expect(staticScriptPolicy).toContain("'sha256-");
   expect(staticScriptPolicy).not.toContain("'unsafe-inline'");
 
+  await page.getByLabel("Quartier").fill("Test neighbourhood");
+  await page.getByLabel("Rue / repère").fill("Test landmark");
   await page.getByRole("button", { name: "Continuer" }).click();
-  await expect(
-    page.getByText("Saisis ton quartier et une rue ou un repère pour continuer.", {
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/fr\/accueil$/);
 
   const authResponse = await page.goto("/fr/connexion", { waitUntil: "load" });
   const authPolicy = authResponse?.headers()["content-security-policy"] ?? "";
