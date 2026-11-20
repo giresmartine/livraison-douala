@@ -18,6 +18,7 @@ Le projet part de zéro : il n'y a pas de code existant à auditer. Toutes les d
 | Remboursements | Administrateur et agent de zone (plafond, validation admin au-dessus) | Validé |
 | Réclamations | Formulaire dans l'appli + WhatsApp | Validé |
 | Connexion coupée | Panier sauvegardé et commande mise en attente puis envoyée au retour du réseau | Choix de Claude |
+| Couverture S-01 | Douala uniquement ; quartiers libres acceptés sans blocage GPS ; géorepérage OSM provisoire avec tampon de 2,5 km | Implémenté ; limite à confirmer auprès d’une source officielle avant lancement |
 | Style visuel | Base Ciel (bleu clair vivant, thème jour/nuit) + navigation de Bulles (micro au centre) + anneau de suivi de Nuit néon, un seul système de jetons | Choix de Claude, à confirmer |
 | Nom, SARL | Nom à définir ; SARL choisie, démarches en cours par un tiers | En cours |
 | Cash | Réservé aux clients ayant au moins 3 commandes réussies | Validé |
@@ -39,4 +40,12 @@ Le projet part de zéro : il n'y a pas de code existant à auditer. Toutes les d
 | Nuit | Non défini | Agent de zone de nuit : validation des vocaux ; un agent pour le WhatsApp |
 | Infrastructure | Gratuit au début | Gratuit en test ; plans payants nécessaires en production (Supabase sans pause ni sauvegardes quotidiennes, hébergement commercial) |
 | Style | À choisir | Base Ciel + navigation Bulles + anneau Nuit néon, à confirmer |
+
+## Couverture de Douala (S-01)
+
+- La ville de livraison est fixée à Douala. La saisie manuelle accepte un quartier libre, même s’il n’est pas dans les suggestions.
+- La position GPS est comparée à la limite indicative représentée par la relation OpenStreetMap [R3832073](https://www.openstreetmap.org/relation/3832073), servie par Nominatim le 20 novembre 2026 et simplifiée avec une tolérance de `0.0001` degré. Un tampon de 2,5 km réduit les faux refus périphériques.
+- Cette géométrie n’est pas une source administrative officielle. Le polygone, sa provenance et sa licence ODbL sont dans `web/lib/config/coverage.ts`; l’application affiche « © contributeurs OpenStreetMap ».
+- Un GPS manifestement éloigné (au moins 50 km du point de référence OSM) ouvre l’écran de zone indisponible, qui propose la saisie manuelle. Pour les positions hors du tampon mais non éloignées, l’application propose la saisie manuelle sans redirection. Une adresse manuelle déclarée à Douala n’est jamais rejetée à cause du GPS.
+- La limite ne définit ni tarifs ni quartiers tarifaires. Aucun frais n’est déduit lorsqu’une zone tarifaire n’est pas configurée.
 

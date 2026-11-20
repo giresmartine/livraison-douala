@@ -7,7 +7,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { z } from "zod";
 import { DeliveryAddressFields } from "@/components/delivery-address-fields";
 import { Icon } from "@/components/ui/icon";
-import { doualaCoverage, isWithinDoualaCoverage, validateDeliveryAddress } from "@/lib/config/coverage";
+import {
+  doualaCoverage,
+  isClearlyFarFromDouala,
+  isWithinDoualaCoverage,
+  validateDeliveryAddress,
+} from "@/lib/config/coverage";
 import type { Coordinates } from "@/lib/config/coverage";
 
 const savedAddressDraftSchema = z.object({
@@ -80,10 +85,6 @@ export function AddressEntry() {
     const validation = validateDeliveryAddress(draft);
 
     if (!validation.accepted) {
-      if (validation.reason === "outside-bounds") {
-        router.push(`/${locale}/zone-indisponible`);
-        return;
-      }
       setFeedback({ kind: "error", message: t("addressRequired") });
       return;
     }
@@ -119,8 +120,13 @@ export function AddressEntry() {
           longitude: coords.longitude,
         };
         if (!isWithinDoualaCoverage(currentCoordinates)) {
+          setCoordinates(undefined);
           setIsLocating(false);
-          router.push(`/${locale}/zone-indisponible`);
+          if (isClearlyFarFromDouala(currentCoordinates)) {
+            router.push(`/${locale}/zone-indisponible`);
+          } else {
+            setFeedback({ kind: "error", message: t("locationOutsideCoverage") });
+          }
           return;
         }
 

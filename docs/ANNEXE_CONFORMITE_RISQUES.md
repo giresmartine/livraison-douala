@@ -29,6 +29,7 @@
 | Panne la nuit | Surveillance et alertes, sauvegardes testées, plan de repli manuel |
 | Infrastructure gratuite en production | Mise en pause et absence de sauvegardes : passer aux plans payants avant le lancement |
 | Un seul agent de nuit | Horaires limités au départ, fiche de procédures, formation, remplaçant désigné |
+| Limite de Douala à confirmer par une source officielle avant le lancement | Action : GIRES confirme la limite auprès d’une source officielle avant le lancement. En attendant, géorepérage OSM indicatif et provisoire, tampon de 2,5 km, sans blocage des adresses manuelles ; attribution ODbL affichée. |
 
 ## A.3 Journal des décisions
 
@@ -49,6 +50,7 @@
 | D-13 | Gratuit en test, plans payants en production | Pause et absence de sauvegardes sur l'offre gratuite ; usage commercial |
 | D-14 | Style : Ciel + navigation Bulles + anneau Nuit néon | Cohérence, micro mis en avant ; à confirmer |
 | D-15 | Le proxy rafraîchit la session sans lire `profiles` à chaque navigation | Réduire les requêtes ; le statut reste contrôlé par `requireRole` et `getRoleDestination` |
+| D-16 | La saisie manuelle à Douala reste acceptée quelle que soit la position GPS ; le GPS utilise le polygone indicatif OSM avec un tampon de 2,5 km et un seuil de 50 km pour proposer l’écran de zone indisponible | Réduire les faux refus ; GIRES confirme la limite officielle avant le lancement |
 
 ## A.4 Questions ouvertes
 

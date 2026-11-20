@@ -73,6 +73,26 @@ test("all registered routes fit the viewport at mobile and tablet widths when au
     expect(new URL(clientPage.url()).pathname).not.toBe(
       new URL(`/fr${partnerScreen!.href}`, baseURL).pathname,
     );
+
+    await clientPage.goto("/fr/commande/livraison", { waitUntil: "load" });
+    await expect(clientPage.getByLabel("Ville")).toHaveValue("Douala");
+    await expect(clientPage.getByLabel("Ville")).toHaveAttribute("readonly", "");
+    await clientPage.getByLabel("Quartier").fill("Quartier libre");
+    await clientPage.getByLabel("Repère / indications").fill("Repère de test");
+    await clientPage.getByRole("button", { name: "Enregistrer le brouillon et continuer" }).click();
+    await expect(clientPage).toHaveURL(/\/fr\/commande\/offres$/);
+    const addressDraft = await clientPage.evaluate(() =>
+      JSON.parse(sessionStorage.getItem("delivery-address-draft") ?? "null"),
+    );
+    expect(addressDraft).toMatchObject({
+      city: "Douala",
+      neighborhood: "Quartier libre",
+      landmark: "Repère de test",
+    });
+
+    await clientPage.goto("/en/commande/livraison", { waitUntil: "load" });
+    await expect(clientPage.getByLabel("City")).toHaveValue("Douala");
+    await expect(clientPage.getByLabel("City")).toHaveAttribute("readonly", "");
   } finally {
     await Promise.all(contexts.map((context) => context.close()));
   }

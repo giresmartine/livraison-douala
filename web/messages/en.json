@@ -25,13 +25,16 @@
     "locating": "Finding your location…",
     "continue": "Continue",
     "privacyNote": "Your location is requested only with your permission. You can also enter a landmark.",
+    "coverageAttribution": "Indicative, provisional GPS boundary based on data from",
+    "coverageAttributionLink": "© OpenStreetMap contributors",
     "addressRequired": "Enter your neighbourhood and a street or landmark to continue.",
     "storageError": "This draft could not be saved on this device. Try again or keep your landmark handy.",
     "draftSaved": "Address saved in this tab.",
     "locationUnavailable": "Location is unavailable on this device. You can enter your neighbourhood.",
     "locationDenied": "Location access was denied. Enter your neighbourhood to continue.",
     "locationTimedOut": "Finding your location took too long. Enter your neighbourhood or try again.",
-    "coordinatesReceived": "Location is within Douala: {latitude}, {longitude}. Enter your neighbourhood and a landmark too.",
+    "locationOutsideCoverage": "This location is outside the indicative boundary. You can continue by entering your neighbourhood and a landmark.",
+    "coordinatesReceived": "Location accepted for delivery in Douala: {latitude}, {longitude}. Enter your neighbourhood and a landmark too.",
     "footer": "Neighbourhoods can be entered freely. The delivery fee is confirmed from the zone, if configured.",
     "footerLocation": "Delivery in Douala"
   }

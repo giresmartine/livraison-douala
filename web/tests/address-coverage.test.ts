@@ -5,6 +5,7 @@ import {
   type AddressSuggestions,
 } from "../lib/address-suggestions";
 import {
+  isClearlyFarFromDouala,
   isWithinDoualaCoverage,
   validateDeliveryAddress,
 } from "../lib/config/coverage";
@@ -36,14 +37,28 @@ describe("Douala delivery address", () => {
     })).toEqual({ accepted: false, reason: "incomplete" });
   });
 
-  it("rejects GPS coordinates outside Douala coverage", () => {
-    expect(isWithinDoualaCoverage({ latitude: 4.05, longitude: 11.52 })).toBe(false);
+  it("accepts GPS coordinates within the provisional buffer around Douala", () => {
+    expect(isWithinDoualaCoverage({ latitude: 4.055897, longitude: 9.6670278 })).toBe(true);
+    expect(isWithinDoualaCoverage({ latitude: 4.24, longitude: 9.7871 })).toBe(true);
+  });
+
+  it("keeps manual Douala addresses valid when GPS is outside the provisional coverage", () => {
+    const farCoordinates = { latitude: 3.6062, longitude: 9.6670278 };
+
+    expect(isWithinDoualaCoverage(farCoordinates)).toBe(false);
+    expect(isClearlyFarFromDouala(farCoordinates)).toBe(true);
     expect(validateDeliveryAddress({
       city: "Douala",
-      neighborhood: "Akwa",
-      landmark: "Face à l'hôtel",
-      coordinates: { latitude: 4.05, longitude: 11.52 },
-    })).toEqual({ accepted: false, reason: "outside-bounds" });
+      neighborhood: "Quartier périphérique",
+      landmark: "Repère connu",
+      coordinates: farCoordinates,
+    })).toEqual({ accepted: true });
+  });
+
+  it("uses the Douala boundary instead of accepting every point in its bounding box", () => {
+    expect(isWithinDoualaCoverage({ latitude: 4.05, longitude: 9.8644 })).toBe(false);
+    expect(isWithinDoualaCoverage({ latitude: 4.055897, longitude: 9.6670278 })).toBe(true);
+    expect(isWithinDoualaCoverage({ latitude: 3.9167931, longitude: 9.3361339 })).toBe(true);
   });
 
   it("matches neighbourhood names without accents or letter case", () => {

@@ -107,6 +107,13 @@ export default async function HomePage({ params }: HomePageProps) {
             <Icon name="lock" />
             {t("privacyNote")}
           </p>
+          <p className="coverage-attribution">
+            {t("coverageAttribution")}{" "}
+            <a href="https://www.openstreetmap.org/copyright" rel="noreferrer" target="_blank">
+              {t("coverageAttributionLink")}
+            </a>{" "}
+            (ODbL).
+          </p>
         </div>
       </section>
 

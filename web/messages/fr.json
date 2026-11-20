@@ -25,13 +25,16 @@
     "locating": "Recherche de ta position…",
     "continue": "Continuer",
     "privacyNote": "Ta position n’est demandée qu’avec ton accord. Tu peux aussi saisir un repère.",
+    "coverageAttribution": "Limite GPS indicative et provisoire basée sur les données",
+    "coverageAttributionLink": "© contributeurs OpenStreetMap",
     "addressRequired": "Saisis ton quartier et une rue ou un repère pour continuer.",
     "storageError": "Le brouillon n’a pas pu être conservé sur cet appareil. Réessaie ou note ton repère.",
     "draftSaved": "Adresse gardée dans cet onglet.",
     "locationUnavailable": "La position n’est pas disponible sur cet appareil. Tu peux saisir ton quartier.",
     "locationDenied": "Accès à la position refusé. Saisis ton quartier pour continuer.",
     "locationTimedOut": "La recherche a pris trop de temps. Saisis ton quartier ou réessaie.",
-    "coordinatesReceived": "Position située à Douala : {latitude}, {longitude}. Saisis aussi ton quartier et un repère.",
+    "locationOutsideCoverage": "Cette position dépasse la limite indicative. Tu peux continuer en saisissant ton quartier et un repère.",
+    "coordinatesReceived": "Position acceptée dans la zone de livraison de Douala : {latitude}, {longitude}. Saisis aussi ton quartier et un repère.",
     "footer": "Les quartiers sont saisis librement. Les frais sont confirmés selon la zone si elle existe.",
     "footerLocation": "Livraison à Douala"
   }

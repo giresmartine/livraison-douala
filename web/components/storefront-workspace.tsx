@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
+import { doualaCoverage } from "@/lib/config/coverage";
 import type { Locale, ScreenDefinition } from "@/lib/screens";
 import type {
   StorefrontData,
@@ -420,7 +421,7 @@ export function StorefrontWorkspace({
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const draft = {
-      city: String(formData.get("city") ?? "").trim(),
+      city: doualaCoverage.city,
       neighborhood: String(formData.get("neighborhood") ?? "").trim(),
       landmark: String(formData.get("landmark") ?? "").trim(),
       details: String(formData.get("details") ?? "").trim(),
@@ -477,13 +478,13 @@ export function StorefrontWorkspace({
         <StorefrontHeader locale={locale} title={screen.title[locale]} />
         <InfoMessage>
           {english
-            ? "Enter any city and neighbourhood in Cameroon. This saves a local draft only; it does not verify delivery coverage, create an order or calculate a fee."
-            : "Saisis la ville et le quartier de ton choix au Cameroun. Cette étape enregistre seulement un brouillon local : elle ne vérifie pas la zone, ne crée aucune commande et ne calcule aucun frais."}
+            ? "Delivery is limited to Douala. Enter any neighbourhood; this saves a local draft only and does not create an order or calculate a fee."
+            : "La livraison est limitée à Douala. Saisis librement ton quartier ; cette étape enregistre seulement un brouillon local, sans créer de commande ni calculer de frais."}
         </InfoMessage>
         <form className="storefront-delivery-form" onSubmit={saveDeliveryDraft}>
           <div className="storefront-form-field">
-            <label htmlFor="delivery-city">{english ? "City or municipality" : "Ville ou commune"}</label>
-            <input autoComplete="address-level2" id="delivery-city" maxLength={100} name="city" required />
+            <label htmlFor="delivery-city">{english ? "City" : "Ville"}</label>
+            <input autoComplete="address-level2" id="delivery-city" name="city" readOnly value={doualaCoverage.city} />
           </div>
           <div className="storefront-form-field">
             <label htmlFor="delivery-neighborhood">{english ? "Neighbourhood" : "Quartier"}</label>
@@ -503,7 +504,7 @@ export function StorefrontWorkspace({
             </InfoMessage>
           )}
           <button className="storefront-primary-button" type="submit">
-            {english ? "Continue without coverage verification" : "Continuer sans vérification de la zone"}
+            {english ? "Save draft and continue" : "Enregistrer le brouillon et continuer"}
           </button>
         </form>
         <Link className="storefront-back-link" href={`/${locale}/paniers`}>
