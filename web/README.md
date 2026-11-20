@@ -34,7 +34,7 @@ Les variables de `.env.example` sont optionnelles pour cet écran. Copie ce fich
 
 ### Polices locales
 
-Inter (texte) et Fraunces (titres) proviennent des paquets `@fontsource-variable/inter` et `@fontsource-variable/fraunces`. Seuls les deux fichiers WOFF2 latins sont livrés et préchargés localement (115 560 octets au total) ; leurs licences OFL sont conservées dans `public/fonts/`.
+Inter est utilisé pour les textes et les titres, conformément au brief UX. La police variable est auto-hébergée dans `public/fonts/` avec sa licence OFL.
 
 ### Tests navigateur avec authentification
 

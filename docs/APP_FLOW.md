@@ -17,7 +17,7 @@
 |---|---|
 | Inscription | 1. Email + mot de passe + acceptation CGV - 2. Email de confirmation - 3. Lien validé - 4. Profil : prénom, téléphone, langue - 5. Accueil. Enregistré : profil, version des CGV acceptée |
 | Connexion | Email + mot de passe - accueil du rôle. Erreur : message générique ; trop de tentatives : blocage temporaire et message |
-| Commande d'un repas | 1. Accueil - 2. Rayon ou partenaire ouvert - 3. Fiche : ajout d'articles - 4. Panier : vérification, minimum de zone - 5. Adresse : quartier, repère, GPS - 6. Paiement : Mobile Money ou cash si autorisé - 7. Confirmation de paiement - 8. Suivi - 9. Livraison, code de remise - 10. Avis. Enregistré : commande, lignes, paiement, historique de statuts |
+| Commande d'un repas (flux « frais à confirmer ») | 1. Accueil - 2. Rayon et partenaire ouvert - 3. Ajouter des articles - 4. Récapitulatif et adresse - 5. Envoyer la commande sans paiement - 6. Attendre le devis dans le suivi - 7. Accepter ou refuser le devis dans les 30 minutes suivant son envoi. Enregistré : commande, lignes tarifées côté serveur, version du devis et historique des statuts. Après acceptation, le parcours s'arrête dans ce bloc : aucun paiement ni transmission au partenaire. |
 | Commande vocale | 1. Bouton micro, consentement d'enregistrement - 2. Enregistrement (annulable) - 3. Traitement - 4. Proposition modifiable (ou relecture humaine) - 5. Validation - 6. Suite identique au panier |
 | Commande de groupe | 1. Créer le groupe, heure limite - 2. Partager le lien - 3. Chaque invité ajoute et paie sa part - 4. Suivi des paiements - 5. Lancement ou fermeture automatique - 6. Livraison unique |
 | Course à la demande | 1. Décrire (texte, photo ou vocal) - 2. Devis avec frais - 3. Paiement - 4. Achat avec photos - 5. Validation d'un éventuel dépassement - 6. Livraison - 7. Remboursement de la différence |
@@ -49,16 +49,10 @@
 
 | Statut | Déclencheur | Acteur | Statut suivant |
 |---|---|---|---|
-| draft | Panier en cours | Client | pending_payment |
-| pending_payment | Validation du panier | Client | paid ou cancelled |
-| paid | Confirmation serveur du paiement ou cash accepté | Système | accepted ou cancelled |
-| accepted | Partenaire accepte | Partenaire | preparing ou cancelled |
-| preparing | Préparation lancée | Partenaire | ready |
-| ready | Commande prête | Partenaire | courier_assigned |
-| courier_assigned | Livreur assigné | Agent, système | picked_up |
-| picked_up | Récupérée | Livreur | on_the_way |
-| on_the_way | En route | Livreur | delivered ou failed_delivery |
-| delivered | Code de remise confirmé | Livreur | (fin) ou refund_requested |
-| failed_delivery | Procédure R3 terminée | Livreur | refunded partiel ou (fin) |
-| cancelled / refunded | Annulation ou remboursement | Client, agent, admin | (fin) |
+| pending_fee_quote | Client envoie le récapitulatif | Client ; frais non fixés | awaiting_customer_confirmation ou cancelled |
+| awaiting_customer_confirmation | Admin envoie un devis versionné | Admin authentifié récemment ; frais de livraison uniquement | quote_accepted ou cancelled |
+| quote_accepted | Client accepte le montant et la version affichés avant expiration | Client propriétaire | Fin de ce bloc : aucun paiement ni acceptation partenaire |
+| cancelled | Client annule/refuse, devis expire après 30 min, aucun devis n'est émis sous 120 min, ou admin remplace le devis | Client, base ou admin selon le motif | Fin ; les raisons sont conservées dans `cancel_reason` |
+
+`quote_expires_at` démarre à l'envoi du devis (30 minutes) ; une commande sans devis est expirée à 120 minutes. La base contrôle les échéances lors des lectures et de l'acceptation. Les statuts historiques `draft`, `pending_payment`, `paid`, `accepted`, `preparing`, `ready`, `courier_assigned`, `picked_up`, `on_the_way`, `delivered`, `failed_delivery` et `refunded` restent au schéma pour les autres flux/futures étapes ; ils ne sont pas atteignables après `quote_accepted` dans ce bloc.
 

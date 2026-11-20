@@ -30,6 +30,11 @@
 | Infrastructure gratuite en production | Mise en pause et absence de sauvegardes : passer aux plans payants avant le lancement |
 | Un seul agent de nuit | Horaires limités au départ, fiche de procédures, formation, remplaçant désigné |
 | Limite de Douala à confirmer par une source officielle avant le lancement | Action : GIRES confirme la limite auprès d’une source officielle avant le lancement. En attendant, géorepérage OSM indicatif et provisoire, tampon de 2,5 km, sans blocage des adresses manuelles ; attribution ODbL affichée. |
+| Frais de livraison en attente | Aucun tarif par défaut ; seul un admin fixe `delivery_fee` dans une borne configurable de 5 000 XAF. Si la configuration est absente, l'action est refusée. Le quartier libre sans zone reste `zone_id = NULL`. |
+| Devis ignoré ou erroné | Devis immuable avec version et historique ; 30 minutes pour accepter après son envoi ; commande sans devis annulée après 120 minutes. Seul `delivery_fee` est activé ; frais de service/suppléments restent désactivés. |
+| Abus ou doublons à la création | Maximum 3 commandes en attente et 10 soumissions par compte par heure ; idempotence unique par utilisateur ; prix recalculés côté serveur. |
+| Compte admin compromis | Les actions de devis exigent un AMR d'authentification ≤ 900 secondes et `aal2`. À activer dans Supabase Auth et à enrôler pour chaque administrateur avant usage. |
+| Accès excessif aux données de commande | Partenaire voit ses lignes et le quartier seulement ; livreur voit le contact/adresse complète uniquement pour sa course active ; les lectures sensibles admin sont auditées. Emails/SMS de devis sont hors périmètre. |
 
 ## A.3 Journal des décisions
 
@@ -51,10 +56,13 @@
 | D-14 | Style : Ciel + navigation Bulles + anneau Nuit néon | Cohérence, micro mis en avant ; à confirmer |
 | D-15 | Le proxy rafraîchit la session sans lire `profiles` à chaque navigation | Réduire les requêtes ; le statut reste contrôlé par `requireRole` et `getRoleDestination` |
 | D-16 | La saisie manuelle à Douala reste acceptée quelle que soit la position GPS ; le GPS utilise le polygone indicatif OSM avec un tampon de 2,5 km et un seuil de 50 km pour proposer l’écran de zone indisponible | Réduire les faux refus ; GIRES confirme la limite officielle avant le lancement |
+| D-17 | Flux sans paiement arrêté à `quote_accepted`/`cancelled` ; l'admin seul fixe un `delivery_fee` entier, plafonné par configuration ; devis versionné, immuable, 30 min ; délai de 120 min sans devis ; quotas 3 en attente et 10/h ; idempotence par compte | Décision validée par GIRES le 21 novembre 2026 ; aucun prix ou quartier tarifaire n'est inventé |
+| D-18 | Inter partout ; Fraunces retirée malgré la mention contraire de `codes/PROMPT_MAITRE.md` | La décision explicite de GIRES suit le brief UX et `web/design/tokens.css` |
+| D-19 | Les actions admin de devis sont fermées par défaut et demandent un AMR récent (≤ 900 s) et `aal2` | Écarte `iat`, qui avance au renouvellement ; MFA Supabase à configurer et enrôler avant usage |
 
 ## A.4 Questions ouvertes
 
-- Confirmation du style retenu par défaut (partie 4.5).
+- Confirmation du style Ciel retenu par défaut (partie 4.5).
 - Nom de la marque, domaines .com et .cm, comptes sociaux, enregistrement de la marque à l'OAPI.
 - Choix de l'agrégateur de paiement après évaluation et délai de vérification de l'entreprise.
 - Montants réels : frais par zone, minimums, plafond des courses, plafond de remboursement des agents.
@@ -64,3 +72,5 @@
 - Avis juridique sur les données, l'alcool, les ordonnances et les CGV.
 - Décision d'infrastructure de production (plans payants ou alternatives) avant le lancement.
 - Recrutement, horaires et formation de l'agent de zone de nuit.
+- GIRES doit activer le MFA/TOTP pour les administrateurs dans le tableau de bord Supabase Auth, enrôler et vérifier un facteur pour chaque compte, puis vérifier que les jetons d'action de devis contiennent `aal2`. Tant que ce n'est pas fait, la base refusera ces actions.
+- Les notifications de devis par email ou SMS restent à décider après ce bloc.

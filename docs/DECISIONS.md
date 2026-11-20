@@ -20,6 +20,8 @@ Le projet part de zéro : il n'y a pas de code existant à auditer. Toutes les d
 | Connexion coupée | Panier sauvegardé et commande mise en attente puis envoyée au retour du réseau | Choix de Claude |
 | Couverture S-01 | Douala uniquement ; quartiers libres acceptés sans blocage GPS ; géorepérage OSM provisoire avec tampon de 2,5 km | Implémenté ; limite à confirmer auprès d’une source officielle avant lancement |
 | Style visuel | Base Ciel (bleu clair vivant, thème jour/nuit) + navigation de Bulles (micro au centre) + anneau de suivi de Nuit néon, un seul système de jetons | Choix de Claude, à confirmer |
+| Typographie | Inter partout, conforme à `docs/UX_UI_DESIGN_BRIEF.md` et `web/design/tokens.css` ; Fraunces retirée | Validé par GIRES le 21 novembre 2026 ; décision prioritaire sur la mention Fraunces pour les titres dans `codes/PROMPT_MAITRE.md` |
+| Flux commande avec devis | Aucun paiement dans ce bloc ; frais de livraison fixés et audités par admin ; devis à accepter sous 30 min ; expiration sans devis à 120 min ; plafond de garde-fou 5 000 XAF | Validé par GIRES le 21 novembre 2026 ; détails et valeurs configurables dans `docs/plans/flux-commande.md` |
 | Nom, SARL | Nom à définir ; SARL choisie, démarches en cours par un tiers | En cours |
 | Cash | Réservé aux clients ayant au moins 3 commandes réussies | Validé |
 | Code de remise | Code à 4 chiffres à chaque livraison | Validé |

@@ -7,16 +7,8 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: "Fraunces Variable";
-  src: url("/fonts/fraunces-latin-standard-normal.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-}
-
 :root {
-  --font-display: "Fraunces Variable", "Fraunces", Georgia, "Times New Roman", serif;
+  --font-display: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-text: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --color-bg: #f2f9ff;

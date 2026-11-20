@@ -1,609 +1,93 @@
-# Plan — commande avec frais à confirmer
+# Flux de commande « frais à confirmer »
 
-> Proposition à valider. Ce document contient le plan et le SQL proposé uniquement : aucune migration ni logique applicative n'est exécutée avant validation.
+Ce plan et son implémentation ont été validés par GIRES le 21 novembre 2026. Le flux ne comporte ni paiement, ni acceptation par le partenaire, ni préparation. Il s'arrête après la décision du client sur le devis.
 
-## Périmètre et invariants
+## Parcours et statuts
 
-- Aucun paiement ni appel à un agrégateur dans ce flux.
-- Le client connecté soumet un panier et une adresse de Douala ; l'API crée une commande en `pending_fee_quote`.
-- `delivery_fee`, `surcharges`, `service_fee` et `total` restent `NULL` jusqu'au devis d'un agent de zone autorisé ou d'un admin.
-- Le client ne transmet aucun prix faisant autorité. Le serveur lit les prix courants des produits et options, vérifie leur disponibilité, puis calcule les lignes et le sous-total.
-- Une clé d'idempotence unique est exigée. Une répétition identique retourne la même commande ; une réutilisation avec un contenu différent est rejetée.
-- Le partenaire doit être actif et ouvert au moment de la soumission. Un partenaire fermé, un produit indisponible ou fictif bloque la création.
-- Une adresse manuelle peut contenir un quartier absent des suggestions. Le texte libre est conservé sans créer de quartier ni de tarif.
-- Le quoteur fixe explicitement la zone et chaque composante des frais. Aucun montant ni quartier tarifaire n'est ajouté par défaut.
-- Un compte suspendu ne peut ni soumettre, ni lire, ni modifier une commande.
-
-## Statuts et transitions proposés
-
-| État | Déclencheur | Acteur / contrôle | État suivant |
+| État | Déclencheur | Règles | Transition permise |
 |---|---|---|---|
-| `draft` | Panier local avant envoi ; il n'est pas créé par le client dans la base | Client actif | `pending_fee_quote` par `submit_order_for_fee_quote` |
-| `pending_fee_quote` | Articles et adresse validés ; tous les frais et le total sont `NULL` | Client actif ; prix calculés côté serveur | `awaiting_customer_confirmation` par `set_order_fee_quote`, ou `cancelled` par le client |
-| `awaiting_customer_confirmation` | Agent de zone/admin a fixé la zone et les frais ; total recalculé côté serveur | Client propriétaire | `quote_accepted` ou `cancelled` |
-| `quote_accepted` | Le client accepte le devis | Aucun paiement ni préparation dans ce bloc | État terminal de ce périmètre ; une étape ultérieure décidera du paiement |
-| `cancelled` | Le client annule avant acceptation | Aucun remboursement : aucun paiement n'a eu lieu | État terminal |
+| `pending_fee_quote` | Envoi du récapitulatif par un client authentifié | Prix des lignes recalculés côté serveur ; frais nuls ; `quote_requested_at` renseigné ; aucun `quote_expires_at` avant l'envoi du devis | Admin authentifié récemment : `awaiting_customer_confirmation`. Client : `cancelled` / `customer_cancelled`. Expiration paresseuse après 120 min sans devis : `cancelled` / `quote_not_provided`. |
+| `awaiting_customer_confirmation` | Admin fixe et envoie un devis | `delivery_fee` entier XAF ≤ plafond configuré ; total recalculé ; `quote_version` incrémenté ; démarrage de l'échéance 30 min à `quote_expires_at` ; devis immuable | Client propriétaire présentant le total et la version affichés : `quote_accepted`, ou `cancelled` / `quote_declined`. Expiration contrôlée par la base lors de chaque acceptation : `cancelled` / `quote_expired`. Admin : annulation / `quote_replaced`, puis réémission en version suivante. |
+| `quote_accepted` | Acceptation validée par la base | Aucun paiement, transmission au partenaire ou démarrage de livraison dans ce bloc | Terminal dans ce périmètre. |
+| `cancelled` | Annulation, refus ou expiration | `cancel_reason` distingue `customer_cancelled`, `quote_declined`, `quote_expired`, `quote_not_provided` et `quote_replaced` | Terminal, sauf réémission admin qui journalise l'annulation puis crée un nouveau devis en `awaiting_customer_confirmation` avec version incrémentée. |
 
-La soumission et la fixation des frais changent le statut dans leurs fonctions dédiées ; elles ne sont pas exposées comme transitions génériques. La table `order_transitions` n'autorise que l'annulation du client et l'acceptation du devis. Cela empêche de passer à l'état « devis prêt » sans avoir renseigné les frais.
+Toute transition de commande passe par `public.transition_order()` et une ligne autorisée de `order_transitions`. Elle écrit `order_status_history` et `audit_logs` avec acteur, statut antérieur, statut nouveau et horodatage. L'envoi du devis est atomique : frais/version et transition réussissent ensemble ou sont tous annulés. L'acceptation compare à la base le montant et la version présentés au client.
 
-## Accès et données personnelles
+## Paramètres opérationnels
 
-- **Client :** lecture de ses commandes et lignes uniquement ; création par la fonction de soumission uniquement.
-- **Partenaire :** une vue dédiée expose seulement les lignes et résumés de ses propres établissements. Elle ne contient ni téléphone, ni identifiant client/adresse, ni adresse complète, ni note de livraison. L'accès direct aux tables `orders` et `order_items` n'accorde pas l'accès aux commandes partenaires.
-- **Livreur :** commande et adresse complète uniquement si une course lui est assignée ; aucun accès aux autres commandes.
-- **Agent de zone :** commande/adresse de devis seulement si `user_roles.scope_id` correspond à `orders.zone_id`. Un devis dont la zone est inconnue est visible à l'admin, qui peut le router.
-- **Admin :** accès opérationnel à toutes les commandes et aux devis.
-- **Compte suspendu :** les politiques et fonctions vérifient `is_active_user()`.
+Une ligne de configuration modifiable sans déploiement porte les valeurs initiales validées :
 
-Hypothèse conservatrice à valider : le partenaire ne reçoit jamais l'adresse complète ni le téléphone, même après acceptation du devis ; seule la course assignée au livreur donne accès à l'adresse. L'accès au téléphone par un livreur reste soumis à une politique séparée.
+| Clé | Valeur initiale | Règle en cas d'absence |
+|---|---:|---|
+| Plafond de `delivery_fee` | 5 000 XAF | Refuser l'envoi du devis |
+| Délai d'acceptation d'un devis | 1 800 s (30 min) | Refuser l'envoi du devis |
+| Délai sans devis | 7 200 s (120 min) | Ne pas annuler automatiquement ; signaler l'erreur opérationnelle |
+| Commandes de devis simultanément en attente par client | 3 | Refuser la création |
+| Soumissions par compte sur une heure glissante | 10 | Refuser la création |
+| Âge maximal de réauthentification admin | 900 s (15 min) | Refuser la fixation, l'annulation et la réémission |
+| AAL minimum pour actions devis admin | `aal2` | Refuser l'action |
 
-## Migration proposée
+Les autres composantes (`service_fee`, `surcharges`, pourboire) sont désactivées et ne sont ni saisissables ni incluses dans le devis. Les montants sont des entiers XAF ; le total est égal au sous-total des lignes plus `delivery_fee`. Toutes les contraintes bloquent les montants négatifs et les totaux incohérents.
 
-Le type enum `order_status` est utilisé dans les tables et fonctions existantes. Pour éviter d'utiliser une nouvelle valeur enum avant le commit PostgreSQL qui l'ajoute, appliquer les deux blocs comme deux migrations successives, dans l'ordre. Le second bloc n'est pas à exécuter avant validation.
+### Réauthentification admin vérifiée
 
-La migration ne réécrit pas les commandes historiques. Les frais `NULL` concernent les nouvelles commandes créées par la fonction ci-dessous, jusqu'à la fixation de leur devis.
+Le JWT d'accès Supabase expose `aal` et `amr`; la documentation des claims distingue `auth_time` dans l'ID token, pas dans le payload AccessTokenClaims GoTrue. Chaque élément `amr` contient méthode et timestamp d'authentification. GoTrue calcule les AMR depuis les enregistrements AMR de la session et sérialise leur `updated_at`, triés du plus récent au plus ancien ; le renouvellement du jeton ne rafraîchit pas cet horodatage. Le contrôle utilise le timestamp AMR le plus récent, jamais `iat`, et échoue si le tableau, la méthode ou le timestamp manque, est futur ou dépasse la fenêtre configurée. Si MFA est activé pour l'administrateur, `aal` doit aussi valoir `aal2`.
 
-### Migration A — valeurs d'état seulement
+Sources vérifiées le 21 novembre 2026 :
 
-```sql
-alter type public.order_status add value if not exists 'pending_fee_quote';
-alter type public.order_status add value if not exists 'awaiting_customer_confirmation';
-alter type public.order_status add value if not exists 'quote_accepted';
-```
+- [Référence des claims JWT Supabase](https://supabase.com/docs/guides/auth/jwt-fields)
+- [Documentation MFA Supabase](https://supabase.com/docs/guides/auth/auth-mfa)
+- [Structure des claims AccessToken GoTrue](https://github.com/supabase/auth/blob/master/internal/tokens/service.go)
+- [Calcul des AMR depuis les timestamps de session GoTrue](https://github.com/supabase/auth/blob/master/internal/models/sessions.go)
 
-### Migration B — adresse, soumission, devis et RLS
+Les tests SQL doivent couvrir AMR frais, 16 minutes, absent, `iat` frais avec AMR absent/ancien, `aal` insuffisant et configuration absente. La fraîcheur AMR est également testée contre un renouvellement de JWT simulé où `iat` avance mais l'AMR reste inchangé.
 
-```sql
-alter table public.addresses
-  add column if not exists city text not null default 'Douala',
-  add column if not exists neighborhood_text text;
+## Écrans existants
 
-alter table public.addresses
-  add constraint addresses_city_douala check (city = 'Douala');
+Aucun code écran supplémentaire :
 
-alter table public.orders
-  add column if not exists idempotency_payload_hash text,
-  alter column delivery_fee drop default,
-  alter column delivery_fee drop not null,
-  alter column surcharges drop default,
-  alter column surcharges drop not null,
-  alter column service_fee drop default,
-  alter column service_fee drop not null,
-  alter column total drop default,
-  alter column total drop not null;
+- **S-17 — Récapitulatif** (`/commande/recapitulatif`) : articles, adresse/quartier, sous-total, frais « Confirmés avant tout paiement », bouton « Envoyer ma commande » et message « Aucun paiement maintenant ».
+- **S-20 — Suivi** (`/commande/apercu/suivi`) : état « En attente des frais de livraison » et frise « Commande envoyée → Frais confirmés → Ton accord ». Realtime si disponible, sinon actualisation périodique ; notifications dans l'application uniquement.
+- **S-28 — Détail commande** (`/commandes/apercu`) : devis XAF, version, échéance, accepter/refuser avec confirmation, états expiré/annulé/déjà traité.
+- **S-61 — Commandes et dispatch** (`/ops/commandes`) : file dédiée de devis en attente, triée du plus ancien, durée d'attente et détail limité au besoin de traitement. La lecture sensible par un admin passe par une fonction journalisée.
 
-insert into public.order_transitions (from_status, to_status, role) values
-  ('pending_fee_quote', 'cancelled', 'client'),
-  ('awaiting_customer_confirmation', 'quote_accepted', 'client'),
-  ('awaiting_customer_confirmation', 'cancelled', 'client')
-on conflict do nothing;
+Les vues client et partenaire n'exposent que les colonnes nécessaires. La vue partenaire fournit ses lignes et le quartier seulement ; aucun téléphone, adresse, instructions ni identifiant client n'est dans une vue/table lisible par le partenaire. Le livreur n'obtient ces données que par une fonction après assignation et pendant une course active. Les accès admin aux données de commande/adresse sont journalisés dans `audit_logs`.
 
-create or replace function public.can_read_order(p_order uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select public.is_active_user() and exists (
-    select 1
-    from public.orders o
-    where o.id = p_order
-      and (
-        o.customer_id = auth.uid()
-        or public.has_role('admin')
-        or (
-          o.zone_id is not null
-          and exists (
-            select 1
-            from public.user_roles ur
-            where ur.user_id = auth.uid()
-              and ur.role = 'zone_agent'
-              and ur.scope_id = o.zone_id
-          )
-        )
-        or exists (
-          select 1
-          from public.deliveries d
-          where d.order_id = o.id
-            and d.courier_id = auth.uid()
-        )
-      )
-  );
-$$;
+## Schéma RLS cible
 
-revoke all on function public.can_read_order(uuid) from public, anon;
-grant execute on function public.can_read_order(uuid)
-  to authenticated, service_role;
+| Acteur | Commandes et lignes | Adresse / contact | Écriture |
+|---|---|---|---|
+| Client actif | Ses commandes seulement | Sa propre adresse ; son détail de commande | Création par fonction serveur ; transitions autorisées par RPC ; aucun UPDATE direct |
+| Partenaire actif | Lignes de ses établissements, avant et après acceptation | Quartier seulement, sans téléphone/adresse complète | Aucune action sur ce flux |
+| Livreur actif | Commandes qui lui sont assignées | Adresse complète et téléphone seulement si la course assignée est active | Aucun accès avant assignation |
+| Admin actif | Liste minimale et détail via RPC audité | Via RPC audité | Devis/transitions via fonctions SECURITY DEFINER avec `search_path = ''`, contrôle rôle + fraîcheur AMR + AAL |
+| Compte suspendu | Aucun accès | Aucun accès | Aucun accès |
 
-create or replace function public.submit_order_for_fee_quote(
-  p_partner_id uuid,
-  p_address_id uuid,
-  p_items jsonb,
-  p_idempotency_key text
-)
-returns uuid
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_customer_id uuid := auth.uid();
-  v_order_id uuid;
-  v_existing_id uuid;
-  v_existing_customer_id uuid;
-  v_existing_hash text;
-  v_payload_hash text;
-  v_zone_id uuid;
-  v_language text;
-  v_item jsonb;
-  v_product_id uuid;
-  v_qty integer;
-  v_option_ids uuid[];
-  v_product public.products%rowtype;
-  v_option_delta integer;
-  v_options_snapshot jsonb;
-  v_unit_price bigint;
-  v_line_total bigint;
-  v_subtotal bigint := 0;
-  v_group record;
-begin
-  if v_customer_id is null
-     or not public.is_active_user()
-     or not public.has_role('client') then
-    raise exception 'authentication_required';
-  end if;
+Toutes les politiques et fonctions vérifient `is_active_user()`. Les privilèges directs ne doivent pas permettre de contourner les RPC ni d'accéder aux données cachées. Les politiques RLS sont testées en pgTAP en succès et en échec pour chaque rôle, y compris partenaire A contre commande de partenaire B.
 
-  if nullif(btrim(p_idempotency_key), '') is null then
-    raise exception 'idempotency_key_required';
-  end if;
+## Création côté serveur
 
-  if jsonb_typeof(p_items) is distinct from 'array' then
-    raise exception 'invalid_order_items';
-  end if;
-  if jsonb_array_length(p_items) = 0 then
-    raise exception 'empty_order';
-  end if;
+Une Server Action valide la requête avec le schéma Zod partagé, récupère l'utilisateur avec Supabase Auth et appelle une fonction transactionnelle. Le serveur lit l'adresse à Douala (quartier libre S-01 autorisé), le partenaire actif et ouvert, le catalogue disponible et les options. Il recalcule prix, libellés, options et lignes ; les prix du navigateur sont ignorés. Une commande multi-partenaire, un panier vide, une quantité hors limites, un produit non disponible, un compte suspendu/non connecté ou les quotas dépassés sont refusés avec une erreur client générique. Aucun identifiant personnel ni détail de panier n'est écrit dans les logs.
 
-  v_payload_hash := encode(
-    extensions.digest(
-      jsonb_build_object(
-        'partner_id', p_partner_id,
-        'address_id', p_address_id,
-        'items', p_items
-      )::text,
-      'sha256'
-    ),
-    'hex'
-  );
+La clé d'idempotence est unique par utilisateur : une répétition retourne la commande déjà créée, y compris après un retour réseau, sans créer de doublon.
 
-  select o.id, o.customer_id, o.idempotency_payload_hash
-    into v_existing_id, v_existing_customer_id, v_existing_hash
-  from public.orders o
-  where o.idempotency_key = p_idempotency_key;
+## Expiration et notifications
 
-  if found then
-    if v_existing_customer_id <> v_customer_id
-       or v_existing_hash is distinct from v_payload_hash then
-      raise exception 'idempotency_key_reused';
-    end if;
-    return v_existing_id;
-  end if;
+Pas de dépendance à `pg_cron`. La base vérifie l'expiration à chaque acceptation et, à la lecture des files/détails, traite les commandes dépassant les 30/120 minutes. Le compte à rebours navigateur est purement indicatif. Une tâche planifiée pourra accélérer les mises à jour d'état ultérieurement, sans devenir la seule protection.
 
-  select n.zone_id into v_zone_id
-  from public.addresses a
-  left join public.neighborhoods n on n.id = a.neighborhood_id
-  where a.id = p_address_id
-    and a.user_id = v_customer_id
-    and a.city = 'Douala'
-    and (a.neighborhood_id is not null or nullif(btrim(a.neighborhood_text), '') is not null)
-    and nullif(btrim(a.landmark), '') is not null;
+La notification de ce bloc reste dans l'application (état, frise, indicateur). Email et SMS sont hors périmètre.
 
-  if not found then
-    raise exception 'invalid_delivery_address';
-  end if;
+## Tests et validation
 
-  if not exists (
-    select 1 from public.partners p
-    where p.id = p_partner_id and p.status = 'active'
-  ) then
-    raise exception 'partner_unavailable';
-  end if;
-  if not public.is_open_now(p_partner_id) then
-    raise exception 'partner_closed';
-  end if;
+- pgTAP : contraintes et somme XAF, statuts et transitions permises/refusées, motifs d'annulation, expiration 30/120 min, devis immuable/version, configuration manquante, plafonds, idempotence, MFA/AMR, RLS de chaque rôle et comptes suspendus.
+- Unitaires : prix falsifiés, double envoi, panier invalide, partenaire fermé, non authentifié, limites 3/10, montant hors plafond, session admin stale et réponse d'erreur générique.
+- E2E : client envoie → admin chiffre → client accepte ; refus ; expiration ; écran S-61 ; rôles réels de test issus uniquement de fixtures `TEST -`. Tests de parité FR/EN et axe/Playwright sur 360/1280 px, jour/nuit.
+- Captures de chaque état livré aux tailles mobile/bureau et thèmes jour/nuit, enregistrées dans `docs/captures/`.
+- Validation des migrations et pgTAP exclusivement par le workflow GitHub Actions : `supabase start`, application/reset local des migrations, puis `supabase test db`. Docker n'étant pas installé sur ce poste, aucun résultat local SQL ne sera prétendu. Aucune migration n'est appliquée à un projet Supabase réel.
 
-  insert into public.orders (
-    customer_id, address_id, zone_id, partner_id, status, source,
-    subtotal, discount_total, delivery_fee, surcharges, service_fee, total,
-    idempotency_key, idempotency_payload_hash
-  )
-  values (
-    v_customer_id, p_address_id, v_zone_id, p_partner_id, 'pending_fee_quote',
-    'web', 0, 0, null, null, null, null,
-    p_idempotency_key, v_payload_hash
-  )
-  on conflict (idempotency_key) do nothing
-  returning id into v_order_id;
+## Risques et actions GIRES
 
-  if v_order_id is null then
-    select o.id, o.customer_id, o.idempotency_payload_hash
-      into v_existing_id, v_existing_customer_id, v_existing_hash
-    from public.orders o
-    where o.idempotency_key = p_idempotency_key;
-
-    if not found
-       or v_existing_customer_id <> v_customer_id
-       or v_existing_hash is distinct from v_payload_hash then
-      raise exception 'idempotency_key_reused';
-    end if;
-    return v_existing_id;
-  end if;
-
-  select p.language into v_language
-  from public.profiles p
-  where p.id = v_customer_id;
-
-  for v_item in
-    select item.value
-    from jsonb_array_elements(p_items) as item(value)
-  loop
-    if jsonb_typeof(v_item -> 'product_id') is distinct from 'string'
-       or jsonb_typeof(v_item -> 'qty') is distinct from 'number' then
-      raise exception 'invalid_order_item';
-    end if;
-
-    if (v_item ->> 'qty')::numeric <> trunc((v_item ->> 'qty')::numeric) then
-      raise exception 'invalid_quantity';
-    end if;
-    v_product_id := (v_item ->> 'product_id')::uuid;
-    v_qty := (v_item ->> 'qty')::integer;
-    if v_qty <= 0 then
-      raise exception 'invalid_quantity';
-    end if;
-
-    select p.* into v_product
-    from public.products p
-    where p.id = v_product_id
-      and p.partner_id = p_partner_id
-      and p.is_available
-      and not p.is_placeholder
-    for share;
-
-    if not found then
-      raise exception 'product_unavailable';
-    end if;
-
-    if v_item ? 'option_ids'
-       and jsonb_typeof(v_item -> 'option_ids') is distinct from 'array' then
-      raise exception 'invalid_options';
-    end if;
-
-    select coalesce(array_agg(option_id.value::uuid order by option_id.ordinality), '{}'::uuid[])
-      into v_option_ids
-    from jsonb_array_elements_text(coalesce(v_item -> 'option_ids', '[]'::jsonb))
-      with ordinality as option_id(value, ordinality);
-
-    if cardinality(v_option_ids) <> (
-      select count(distinct selected.value)
-      from jsonb_array_elements_text(coalesce(v_item -> 'option_ids', '[]'::jsonb))
-        as selected(value)
-    ) then
-      raise exception 'duplicate_option';
-    end if;
-
-    if exists (
-      select 1
-      from unnest(v_option_ids) as selected(option_id)
-      left join public.options o on o.id = selected.option_id
-      left join public.option_groups g on g.id = o.group_id
-      where o.id is null
-        or not o.is_available
-        or g.product_id is distinct from v_product_id
-    ) then
-      raise exception 'invalid_option';
-    end if;
-
-    for v_group in
-      select
-        g.min_select,
-        g.max_select,
-        count(o.id) filter (where o.id = any(v_option_ids)) as selected_count
-      from public.option_groups g
-      left join public.options o on o.group_id = g.id
-      where g.product_id = v_product_id
-      group by g.id, g.min_select, g.max_select
-    loop
-      if v_group.selected_count < v_group.min_select
-         or v_group.selected_count > v_group.max_select then
-        raise exception 'invalid_option_selection';
-      end if;
-    end loop;
-
-    select
-      coalesce(sum(o.price_delta), 0),
-      coalesce(
-        jsonb_agg(jsonb_build_object(
-          'id', o.id,
-          'name', o.name,
-          'price_delta', o.price_delta
-        ) order by o.id),
-        '[]'::jsonb
-      )
-    into v_option_delta, v_options_snapshot
-    from public.options o
-    join public.option_groups g on g.id = o.group_id
-    where o.id = any(v_option_ids)
-      and g.product_id = v_product_id;
-
-    v_unit_price := v_product.price::bigint + v_option_delta;
-    v_line_total := v_unit_price * v_qty;
-    if v_unit_price < 0
-       or v_unit_price > 2147483647
-       or v_line_total > 2147483647
-       or v_subtotal + v_line_total > 2147483647 then
-      raise exception 'order_amount_out_of_range';
-    end if;
-
-    insert into public.order_items (
-      order_id, product_id, partner_id, name_snapshot,
-      unit_price, qty, options, line_total
-    )
-    values (
-      v_order_id,
-      v_product_id,
-      p_partner_id,
-      coalesce(v_product.name ->> v_language, v_product.name ->> 'fr', v_product.slug),
-      v_unit_price::integer,
-      v_qty,
-      v_options_snapshot,
-      v_line_total::integer
-    );
-
-    v_subtotal := v_subtotal + v_line_total;
-  end loop;
-
-  update public.orders
-  set subtotal = v_subtotal::integer
-  where id = v_order_id;
-
-  insert into public.order_status_history (order_id, status, changed_by, reason)
-  values (v_order_id, 'pending_fee_quote', v_customer_id, 'submitted_for_fee_quote');
-
-  return v_order_id;
-end;
-$$;
-
-revoke all on function public.submit_order_for_fee_quote(uuid, uuid, jsonb, text)
-  from public, anon;
-grant execute on function public.submit_order_for_fee_quote(uuid, uuid, jsonb, text)
-  to authenticated;
-
-create or replace function public.set_order_fee_quote(
-  p_order_id uuid,
-  p_zone_id uuid,
-  p_delivery_fee integer,
-  p_surcharges integer,
-  p_service_fee integer
-)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_order public.orders%rowtype;
-  v_total bigint;
-  v_before jsonb;
-  v_after jsonb;
-begin
-  if auth.uid() is null or not public.is_active_user() then
-    raise exception 'authentication_required';
-  end if;
-  if not public.has_role('admin') and not public.has_role('zone_agent') then
-    raise exception 'forbidden';
-  end if;
-
-  select o.* into v_order
-  from public.orders o
-  where o.id = p_order_id
-  for update;
-
-  if not found then
-    raise exception 'forbidden';
-  end if;
-
-  if not public.has_role('admin') then
-    if v_order.zone_id is null or v_order.zone_id <> p_zone_id
-       or not exists (
-         select 1
-         from public.user_roles ur
-         where ur.user_id = auth.uid()
-           and ur.role = 'zone_agent'
-           and ur.scope_id = p_zone_id
-       ) then
-      raise exception 'forbidden';
-    end if;
-  end if;
-
-  if v_order.status <> 'pending_fee_quote' then
-    raise exception 'order_not_waiting_for_quote';
-  end if;
-
-  if not exists (
-    select 1 from public.zones z where z.id = p_zone_id and z.active
-  ) then
-    raise exception 'zone_unavailable';
-  end if;
-
-  if p_delivery_fee is null or p_delivery_fee < 0
-     or p_surcharges is null or p_surcharges < 0
-     or p_service_fee is null or p_service_fee < 0 then
-    raise exception 'invalid_fee';
-  end if;
-
-  if v_order.discount_total > v_order.subtotal then
-    raise exception 'invalid_order_discount';
-  end if;
-
-  v_total := v_order.subtotal::bigint - v_order.discount_total::bigint
-    + p_delivery_fee::bigint + p_surcharges::bigint
-    + p_service_fee::bigint + v_order.tip::bigint;
-  if v_total > 2147483647 then
-    raise exception 'order_amount_out_of_range';
-  end if;
-
-  v_before := jsonb_build_object(
-    'status', v_order.status,
-    'zone_id', v_order.zone_id,
-    'delivery_fee', v_order.delivery_fee,
-    'surcharges', v_order.surcharges,
-    'service_fee', v_order.service_fee,
-    'total', v_order.total
-  );
-
-  update public.orders
-  set zone_id = p_zone_id,
-      delivery_fee = p_delivery_fee,
-      surcharges = p_surcharges,
-      service_fee = p_service_fee,
-      total = v_total::integer,
-      status = 'awaiting_customer_confirmation'
-  where id = p_order_id;
-
-  insert into public.order_status_history (order_id, status, changed_by, reason)
-  values (p_order_id, 'awaiting_customer_confirmation', auth.uid(), 'fee_quote_set');
-
-  v_after := jsonb_build_object(
-    'status', 'awaiting_customer_confirmation',
-    'zone_id', p_zone_id,
-    'delivery_fee', p_delivery_fee,
-    'surcharges', p_surcharges,
-    'service_fee', p_service_fee,
-    'total', v_total
-  );
-
-  insert into public.audit_logs (actor_id, action, entity, entity_id, before, after)
-  values (auth.uid(), 'order.fee_quote.set', 'orders', p_order_id::text, v_before, v_after);
-end;
-$$;
-
-revoke all on function public.set_order_fee_quote(uuid, uuid, integer, integer, integer)
-  from public, anon;
-grant execute on function public.set_order_fee_quote(uuid, uuid, integer, integer, integer)
-  to authenticated;
-
-drop policy if exists orders_insert on public.orders;
-drop policy if exists orders_update_draft on public.orders;
-drop policy if exists order_items_write on public.order_items;
-revoke insert, update, delete on public.orders, public.order_items
-  from anon, authenticated;
-
-drop policy if exists orders_select on public.orders;
-create policy orders_select on public.orders for select to authenticated
-  using (public.is_active_user() and public.can_read_order(id));
-
-drop policy if exists order_items_select on public.order_items;
-create policy order_items_select on public.order_items for select to authenticated
-  using (
-    public.is_active_user()
-    and exists (
-      select 1
-      from public.orders o
-      where o.id = order_id
-        and (
-          o.customer_id = auth.uid()
-          or public.has_role('admin')
-          or (
-            o.zone_id is not null
-            and exists (
-              select 1 from public.user_roles ur
-              where ur.user_id = auth.uid()
-                and ur.role = 'zone_agent'
-                and ur.scope_id = o.zone_id
-            )
-          )
-          or exists (
-            select 1 from public.deliveries d
-            where d.order_id = o.id
-              and d.courier_id = auth.uid()
-          )
-        )
-    )
-  );
-
--- Vue à privilèges du propriétaire : sa projection exclut les données client/adresse/contact.
-create or replace view public.partner_order_queue
-with (security_barrier = true)
-as
-select
-  o.id as order_id,
-  o.order_number,
-  o.status,
-  o.created_at,
-  o.subtotal,
-  oi.id as order_item_id,
-  oi.partner_id,
-  oi.product_id,
-  oi.name_snapshot,
-  oi.unit_price,
-  oi.qty,
-  oi.options,
-  oi.line_total
-from public.orders o
-join public.order_items oi on oi.order_id = o.id
-where public.is_active_user()
-  and public.has_role('partner')
-  and public.is_partner_member(oi.partner_id)
-  and o.status <> 'draft';
-
-grant select on public.partner_order_queue to authenticated;
-
-create policy addresses_fee_quote_read on public.addresses for select to authenticated
-  using (
-    public.is_active_user()
-    and exists (
-      select 1
-      from public.orders o
-      where o.address_id = addresses.id
-        and o.status = 'pending_fee_quote'
-        and (
-          public.has_role('admin')
-          or (
-            o.zone_id is not null
-            and exists (
-              select 1 from public.user_roles ur
-              where ur.user_id = auth.uid()
-                and ur.role = 'zone_agent'
-                and ur.scope_id = o.zone_id
-            )
-          )
-        )
-    )
-  );
-
-create policy addresses_assigned_courier_read on public.addresses for select to authenticated
-  using (
-    public.is_active_user()
-    and exists (
-      select 1
-      from public.orders o
-      join public.deliveries d on d.order_id = o.id
-      where o.address_id = addresses.id
-        and d.courier_id = auth.uid()
-        and o.status in ('courier_assigned', 'picked_up', 'on_the_way')
-    )
-  );
-```
-
-## Tests à ajouter après validation
-
-- **pgTAP / RLS :** client A ne lit ni ne modifie les commandes/lignes de B ; partenaire A ne voit que ses lignes via `partner_order_queue` et ne peut pas lire téléphone/adresse ; livreur ne voit que ses courses et leurs adresses ; agent de zone est limité à son `scope_id` ; admin peut traiter un devis ; compte suspendu est bloqué dans toutes ces voies.
-- **pgTAP / fonctions :** frais et total `NULL` à la soumission ; frais négatifs rejetés ; seul zone_agent/admin peut fixer un devis ; mise à jour concurrente ne fixe le devis qu'une fois ; écriture `audit_logs` présente ; aucun paiement créé.
-- **Tests unitaires :** prix falsifié par le client ignoré au profit des prix DB ; même clé envoyée deux fois ne crée qu'une commande ; même clé avec contenu différent est rejetée ; partenaire fermé rejeté ; utilisateur non connecté rejeté.
-
-## Points soumis à validation
-
-1. Confirmer les noms `awaiting_customer_confirmation` et `quote_accepted`, ainsi que l'arrêt du flux à `quote_accepted` sans paiement ni acceptation partenaire.
-2. Confirmer que le partenaire ne reçoit jamais téléphone/adresse complète (proposition conservatrice), même après acceptation du devis.
-3. Confirmer le traitement admin des adresses libres dont le quartier ne correspond à aucune zone (`zone_id = NULL`) ; aucun tarif ni rattachement n'est inventé.
+- Activer le fournisseur MFA dans Supabase Auth, enrôler chaque compte admin avec un facteur vérifié, et s'assurer que le JWT d'action admin présente `aal2`. Les actions restent bloquées tant que la valeur d'AAL requise est absente.
+- Choisir plus tard si des notifications email/SMS sont nécessaires.
+- La limite GPS S-01 est indicative/provisoire ; elle ne produit ni zone ni tarif.
+- Aucun paiement, partenaire notifié ou traitement de commande ne suit `quote_accepted` dans ce bloc.
