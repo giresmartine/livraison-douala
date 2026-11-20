@@ -1886,6 +1886,7 @@ h1 {
 
   .storefront-header {
     grid-template-columns: auto 1fr;
+    flex-wrap: wrap;
     gap: 12px;
     padding-bottom: 15px;
   }
@@ -1899,9 +1900,18 @@ h1 {
   }
 
   .storefront-header nav {
-    grid-column: 1 / -1;
-    justify-content: space-between;
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+    justify-content: flex-start;
+    gap: 16px;
+    overflow-x: auto;
     padding-top: 5px;
+    white-space: nowrap;
+  }
+
+  .storefront-header nav a {
+    flex: 0 0 auto;
   }
 
   .storefront-partner-card {
