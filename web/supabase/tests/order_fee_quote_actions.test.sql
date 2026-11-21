@@ -102,7 +102,7 @@ select set_config(
     'aal', 'aal1',
     'amr', jsonb_build_array(jsonb_build_object(
       'method', 'password',
-      'timestamp', extract(epoch from clock_timestamp())::bigint
+      'timestamp', floor(extract(epoch from clock_timestamp()))::bigint
     ))
   )::text,
   true
@@ -121,10 +121,10 @@ select set_config(
     'sub', '00000000-0000-4000-8000-000000000301',
     'role', 'authenticated',
     'aal', 'aal2',
-    'iat', extract(epoch from clock_timestamp())::bigint,
+    'iat', floor(extract(epoch from clock_timestamp()))::bigint,
     'amr', jsonb_build_array(jsonb_build_object(
       'method', 'totp',
-      'timestamp', extract(epoch from clock_timestamp())::bigint
+      'timestamp', floor(extract(epoch from clock_timestamp()))::bigint
     ))
   )::text,
   true
@@ -203,7 +203,7 @@ select set_config(
     'aal', 'aal1',
     'amr', jsonb_build_array(jsonb_build_object(
       'method', 'password',
-      'timestamp', extract(epoch from clock_timestamp())::bigint
+      'timestamp', floor(extract(epoch from clock_timestamp()))::bigint
     ))
   )::text,
   true
