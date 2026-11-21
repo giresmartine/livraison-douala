@@ -25,8 +25,6 @@ values
 
 insert into public.user_roles (user_id, role)
 values
-  ('00000000-0000-4000-8000-000000000451', 'client'),
-  ('00000000-0000-4000-8000-000000000452', 'client'),
   ('00000000-0000-4000-8000-000000000453', 'admin');
 
 insert into public.orders (
