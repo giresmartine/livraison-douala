@@ -159,8 +159,8 @@ select set_config(
 select throws_ok(
   $$select public.get_customer_fee_quote_order('00000000-0000-4000-8000-000000000461')$$,
   'P0001',
-  'active_client_authentication_required',
-  'an admin cannot use the customer tracking read function'
+  'order_not_found',
+  'an admin cannot read a different customer order through the tracking function'
 );
 
 select * from finish();
