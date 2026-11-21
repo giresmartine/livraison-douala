@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(9);
 
 insert into auth.users (
   id,
@@ -56,6 +56,7 @@ insert into public.orders (
   total,
   quote_requested_at,
   quote_expires_at,
+  quote_replacement_requested_at,
   quote_version,
   cancel_reason,
   idempotency_key
@@ -63,23 +64,29 @@ insert into public.orders (
 values
   ('00000000-0000-4000-8000-000000000531', '00000000-0000-4000-8000-000000000502',
    '00000000-0000-4000-8000-000000000521', '00000000-0000-4000-8000-000000000511',
-   'pending_fee_quote', 10000, 0, null, 0, 0, 0, 10000, now(), null, 0, null, 'admin-queue-pending'),
+   'pending_fee_quote', 10000, 0, null, 0, 0, 0, 10000, now(), null, null, 0, null, 'admin-queue-pending'),
   ('00000000-0000-4000-8000-000000000532', '00000000-0000-4000-8000-000000000502',
    '00000000-0000-4000-8000-000000000521', '00000000-0000-4000-8000-000000000511',
    'pending_fee_quote', 10000, 0, null, 0, 0, 0, 10000,
-   now() - interval '121 minutes', null, 0, null, 'admin-queue-overdue'),
+   now() - interval '121 minutes', null, null, 0, null, 'admin-queue-overdue'),
   ('00000000-0000-4000-8000-000000000533', '00000000-0000-4000-8000-000000000502',
    '00000000-0000-4000-8000-000000000521', '00000000-0000-4000-8000-000000000511',
    'cancelled', 10000, 0, 800, 0, 0, 0, 10800,
-   now() - interval '5 minutes', now() + interval '25 minutes', 1, 'quote_replaced', 'admin-queue-reissue'),
+   now() - interval '5 minutes', now() + interval '25 minutes',
+   now() - interval '5 minutes', 1, 'quote_replaced', 'admin-queue-reissue'),
   ('00000000-0000-4000-8000-000000000534', '00000000-0000-4000-8000-000000000502',
    '00000000-0000-4000-8000-000000000521', '00000000-0000-4000-8000-000000000511',
    'awaiting_customer_confirmation', 10000, 0, 1000, 0, 0, 0, 11000,
-   now() - interval '31 minutes', now() - interval '1 minute', 1, null, 'admin-queue-expired'),
+   now() - interval '31 minutes', now() - interval '1 minute', null, 1, null, 'admin-queue-expired'),
   ('00000000-0000-4000-8000-000000000535', '00000000-0000-4000-8000-000000000502',
    '00000000-0000-4000-8000-000000000521', '00000000-0000-4000-8000-000000000511',
    'awaiting_customer_confirmation', 10000, 0, 1200, 0, 0, 0, 11200,
-   now() - interval '3 minutes', now() + interval '27 minutes', 1, null, 'admin-queue-awaiting');
+   now() - interval '3 minutes', now() + interval '27 minutes', null, 1, null, 'admin-queue-awaiting'),
+  ('00000000-0000-4000-8000-000000000536', '00000000-0000-4000-8000-000000000502',
+   '00000000-0000-4000-8000-000000000521', '00000000-0000-4000-8000-000000000511',
+   'cancelled', 10000, 0, 800, 0, 0, 0, 10800,
+   now() - interval '130 minutes', now() - interval '100 minutes',
+   now() - interval '121 minutes', 1, 'quote_replaced', 'admin-queue-expired-reissue');
 
 insert into public.order_items (
   id, order_id, partner_id, name_snapshot, unit_price, qty, options, line_total
@@ -162,6 +169,11 @@ select is(
   (select cancel_reason from public.orders where id = '00000000-0000-4000-8000-000000000534'),
   'quote_expired',
   'the queue lazily cancels expired quotes'
+);
+select is(
+  (select cancel_reason from public.orders where id = '00000000-0000-4000-8000-000000000536'),
+  'quote_not_provided',
+  'the queue expires a replacement request after its configured waiting duration'
 );
 
 delete from public.order_flow_config where singleton;

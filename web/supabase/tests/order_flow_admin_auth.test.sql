@@ -2,7 +2,16 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(10);
+
+select ok(
+  (
+    select 'search_path=""' = any (procedure.proconfig)
+    from pg_catalog.pg_proc procedure
+    where procedure.oid = 'public.transition_order(uuid,public.order_status,text)'::regprocedure
+  ),
+  'transition_order is pinned to an empty search_path'
+);
 
 insert into auth.users (
   id,

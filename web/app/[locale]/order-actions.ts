@@ -147,6 +147,7 @@ function orderErrorCode(message: string): string {
     "order_total_out_of_range",
     "delivery_fee_out_of_limit",
     "order_not_quoteable",
+    "quote_replacement_expired",
     "order_not_found",
   ];
   return knownCodes.find((code) => message.includes(code)) ?? "order_submission_failed";

@@ -22,6 +22,7 @@ Une ligne de configuration modifiable sans déploiement porte les valeurs initia
 | Plafond de `delivery_fee` | 5 000 XAF | Refuser l'envoi du devis |
 | Délai d'acceptation d'un devis | 1 800 s (30 min) | Refuser l'envoi du devis |
 | Délai sans devis | 7 200 s (120 min) | Ne pas annuler automatiquement ; signaler l'erreur opérationnelle |
+| Délai de remplacement d'un devis annulé | Délai sans devis (7 200 s par défaut) | Refuser la réémission et permettre au client de recommencer |
 | Commandes de devis simultanément en attente par client | 3 | Refuser la création |
 | Soumissions par compte sur une heure glissante | 10 | Refuser la création |
 | Âge maximal de réauthentification admin | 900 s (15 min) | Refuser la fixation, l'annulation et la réémission |
@@ -49,10 +50,12 @@ Les tests SQL doivent couvrir AMR frais, 16 minutes, absent, `iat` frais avec AM
 - **S-15 — Adresse de livraison** (`/commande/livraison`) : quartier libre, repère et instructions sont enregistrés pour le client connecté ; GPS facultatif, vérifié dans la couverture Douala. Un GPS détecté hors zone bloque l'enregistrement.
 - **S-17 — Récapitulatif** (`/commande/recapitulatif`) : articles et adresse, prix non autoritatifs du panier non repris ; l'envoi appelle la Server Action, qui recalcule les prix et affiche ensuite l'état « frais à confirmer ». Aucun paiement n'est demandé. La clé d'idempotence de la tentative reste dans `sessionStorage` jusqu'au résultat.
 - **S-20 — Suivi** (`/commande/apercu/suivi`) : frise, détails du devis, compte à rebours indicatif, acceptation/refus ; actualisation toutes les 15 secondes tant que le devis est ouvert. L'acceptation vérifie montant/version en base. Notifications dans l'application uniquement.
-- **S-28 — Détail commande** (`/commandes/apercu`) : reste à raccorder au détail du devis et aux mêmes actions.
-- **S-61 — Commandes et dispatch** (`/ops/commandes`) : la file admin dédiée, l'envoi/réémission du devis, la réauthentification sans perdre le montant saisi et la lecture sensible journalisée sont implémentés. La migration, pgTAP et la suite E2E du projet passent dans la CI ; le parcours admin n'a pas encore d'E2E dédié.
+- **S-28 — Détail commande** (`/commandes/apercu`) : réutilise le chargement serveur audité du suivi et le même composant client ; affiche l'établissement, les articles, options et adresse de la commande propriétaire.
+- **S-61 — Commandes et dispatch** (`/ops/commandes`) : la file admin dédiée, l'envoi/réémission du devis, la réauthentification sans perdre le montant saisi et la lecture sensible journalisée sont implémentés. Un E2E dédié couvre l'envoi, l'annulation, la réémission et l'accessibilité ; ces derniers changements restent à valider par la CI.
 
-Pour les commandes de devis (`quote_requested_at IS NOT NULL`), le client actif ne lit que ses propres commandes et lignes. Les partenaires, agents de zone, livreurs et admins n'ont pas d'accès direct aux lignes concernées ; la file admin passe par une RPC auditée. La réduction des accès directs aux commandes historiques et la vérification des refus correspondants sont livrées dans la migration RLS dédiée.
+Après annulation admin pour réémission, le client voit « Nous préparons un nouveau devis ». La fenêtre de remplacement reprend le paramètre `no_quote_timeout_seconds` (120 minutes par défaut) et démarre à l'annulation du devis précédent. Le suivi client et la file admin expirent paresseusement les demandes dépassées ; la base refuse également toute réémission après l'échéance.
+
+Pour les commandes de devis (`quote_requested_at IS NOT NULL`), le client actif ne lit que ses propres commandes et lignes. Les partenaires, agents de zone, livreurs et admins n'ont pas d'accès direct aux lignes concernées ; la file admin passe par une RPC auditée. Les privilèges de tables restent révoqués : le test pgTAP prouve d'abord le refus `42501`, puis accorde des droits temporaires dans sa transaction afin d'exercer les politiques RLS, droits annulés au rollback.
 
 Les vues client et partenaire n'exposent que les colonnes nécessaires. La vue partenaire fournit ses lignes et le quartier seulement ; aucun téléphone, adresse, instructions ni identifiant client n'est dans une vue/table lisible par le partenaire. Le livreur n'obtient ces données que par une fonction après assignation et pendant une course active. Les accès admin aux données de commande/adresse sont journalisés dans `audit_logs`.
 

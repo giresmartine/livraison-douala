@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(15);
+select plan(17);
 
 insert into auth.users (
   id,
@@ -183,10 +183,24 @@ select is(
   'quote_replaced',
   'an admin can cancel a sent quote to prepare a replacement'
 );
+select ok(
+  (
+    select quote_replacement_requested_at between
+      clock_timestamp() - interval '1 minute' and clock_timestamp()
+    from public.orders
+    where id = '00000000-0000-4000-8000-000000000311'
+  ),
+  'the replacement deadline starts when the admin cancels the old quote'
+);
 select is(
   public.send_order_fee_quote('00000000-0000-4000-8000-000000000311', 3000),
   'quote_reissued',
   'an admin can reissue a cancelled quote as a new version'
+);
+select is(
+  (select quote_replacement_requested_at from public.orders where id = '00000000-0000-4000-8000-000000000311'),
+  null,
+  'sending the replacement closes its waiting window'
 );
 select is(
   (select quote_version from public.orders where id = '00000000-0000-4000-8000-000000000311'),
