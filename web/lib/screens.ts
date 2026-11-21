@@ -47,7 +47,7 @@ export const screens: ScreenDefinition[] = [
     "S-02", "client", client, "/adresse/confirmer", { fr: "Confirmer l’adresse", en: "Confirm the address" },
     { fr: "Placer un repère précis sur la carte, puis compléter les instructions de livraison.", en: "Pin the precise location on the map, then add delivery instructions." },
     [
-      { fr: "La carte et le géocodage attendent un fournisseur et les données de Douala.", en: "The map and geocoding need a provider and Douala map data." },
+      { fr: "Si la position n’est pas disponible, saisis ton quartier et un repère pour continuer.", en: "If your location is unavailable, enter your neighbourhood and a landmark to continue." },
       { fr: "Le repère est obligatoire ; l’adresse principale est un choix explicite.", en: "A landmark is required; setting a primary address is optional." },
     ],
     { next: ["S-03", "S-04"], sensitive: true },
@@ -193,9 +193,8 @@ export const screens: ScreenDefinition[] = [
     "S-18", "client", client, "/commande/paiement", { fr: "Paiement", en: "Payment" },
     { fr: "Mobile Money MTN ou Orange ; espèces selon conditions ; carte indiquée bientôt.", en: "MTN or Orange Mobile Money; cash when eligible; card marked coming soon." },
     [
-      { fr: "Aucun paiement ne peut être simulé : agrégateur, compte marchand et webhook signés requis.", en: "Payments cannot be simulated: a provider, merchant account and signed webhooks are required." },
-      { fr: "Mobile Money attend une confirmation, vérifiée toutes les 3 s pendant au plus 5 min.", en: "Mobile Money awaits confirmation, polled every 3 s for up to 5 minutes." },
-      { fr: "CGV et confidentialité doivent être acceptées avec leur version.", en: "Terms and privacy must be accepted with their version." },
+      { fr: "Aucun paiement n’est demandé dans le parcours actuel ; attends le devis des frais de livraison.", en: "No payment is requested in this journey; wait for the delivery-fee quote." },
+      { fr: "Le montant des frais est confirmé avant toute décision du client.", en: "The delivery-fee amount is confirmed before the customer decides." },
     ],
     { next: ["S-19"], sensitive: true },
   ),
@@ -222,8 +221,8 @@ export const screens: ScreenDefinition[] = [
     { fr: "Enregistrer au plus 30 secondes, relire et corriger la transcription puis valider les propositions.", en: "Record up to 30 seconds, review and edit transcription, then validate suggestions." },
     [
       { fr: "Accord micro explicite ; enregistrement annulable.", en: "Explicit microphone consent; recording can be cancelled." },
-      { fr: "Un agent doit confirmer les éléments incertains avant toute commande.", en: "An agent must confirm uncertain items before any order." },
-      { fr: "Audio supprimé après traitement ; fournisseur et agent non configurés.", en: "Audio deleted after processing; provider and agent are not configured." },
+      { fr: "Vérifie le texte reconnu et corrige-le avant de valider ta demande.", en: "Review and correct the recognized text before confirming your request." },
+      { fr: "Tu peux annuler l’enregistrement avant de l’envoyer.", en: "You can cancel the recording before sending it." },
     ],
     { next: ["S-22"] },
   ),
@@ -262,7 +261,7 @@ export const screens: ScreenDefinition[] = [
     [
       { fr: "Consentement explicite pour les données de santé.", en: "Explicit consent is required for health data." },
       { fr: "Fichier privé avec URL signée ; suppression prévue après 30 jours.", en: "Private file with a signed URL; deletion scheduled after 30 days." },
-      { fr: "Téléversement bloqué jusqu’à l’activation du stockage privé et du traitement de purge.", en: "Upload stays blocked until private storage and deletion processing are configured." },
+      { fr: "Pour l’instant, commande uniquement les articles disponibles dans le catalogue de parapharmacie.", en: "For now, order only items available in the personal-care catalogue." },
     ],
     { next: ["S-26"], sensitive: true },
   ),
@@ -271,7 +270,7 @@ export const screens: ScreenDefinition[] = [
     { fr: "Afficher les états reçue, en validation, prix confirmé et sac scellé.", en: "Show received, under review, price confirmed and sealed bag states." },
     [
       { fr: "L’achat attend validation de la pharmacie et acceptation du prix.", en: "Purchase waits for pharmacy review and price approval." },
-      { fr: "Ne pas afficher de médicament ou de conseil médical non validé.", en: "Do not show unverified medicines or medical advice." },
+      { fr: "Les articles disponibles sont des produits d’hygiène et de parapharmacie.", en: "Available items are hygiene and personal-care products." },
     ],
     { next: ["S-18", "S-20"], sensitive: true },
   ),
@@ -280,7 +279,7 @@ export const screens: ScreenDefinition[] = [
     { fr: "Commandes en cours en premier, puis historique avec enseigne, date, total et statut.", en: "Active orders first, followed by history with shop, date, total and status." },
     [
       { fr: "Données privées accessibles au seul propriétaire authentifié.", en: "Private data is accessible only to the authenticated owner." },
-      { fr: "Aucune commande de démonstration n’est inventée.", en: "No sample orders are fabricated." },
+      { fr: "Si tu n’as pas encore commandé, tes commandes apparaîtront ici.", en: "If you have not ordered yet, your orders will appear here." },
     ],
     { next: ["S-20", "S-28"], sensitive: true },
   ),
@@ -306,7 +305,7 @@ export const screens: ScreenDefinition[] = [
     "S-30", "client", client, "/compte/adresses", { fr: "Mes adresses", en: "My addresses" },
     { fr: "Consulter, ajouter ou définir une adresse principale sur une carte.", en: "View, add or set a primary address using a map." },
     [
-      { fr: "Carte et géocodage ne sont pas configurés.", en: "Map and geocoding are not configured." },
+      { fr: "Tu peux saisir un quartier et un repère ; l’utilisation du GPS reste facultative.", en: "You can enter a neighbourhood and landmark; using GPS is optional." },
       { fr: "Les adresses sont privées et ne sont jamais mises en cache.", en: "Addresses are private and are never cached." },
     ],
     { next: ["S-02"], sensitive: true },
@@ -315,8 +314,7 @@ export const screens: ScreenDefinition[] = [
     "S-31", "client", client, "/compte/preferences", { fr: "Préférences", en: "Preferences" },
     { fr: "Choisir la langue, le thème auto/clair/sombre et les canaux de notification.", en: "Choose language, auto/light/dark theme and notification channels." },
     [
-      { fr: "Préférences de notification et de thème à modéliser côté compte.", en: "Notification and theme preferences need an account data model." },
-      { fr: "Le thème nuit automatique suit l’heure de Douala ; réglage manuel à connecter.", en: "Automatic night mode follows Douala time; manual preference still needs wiring." },
+      { fr: "Le thème nuit suit automatiquement l’heure de Douala.", en: "Night mode follows the local time in Douala." },
     ],
     { next: ["S-29"], sensitive: true },
   ),
@@ -325,8 +323,7 @@ export const screens: ScreenDefinition[] = [
     { fr: "Choisir la commande, le motif, décrire le problème et joindre une preuve facultative.", en: "Choose an order, issue type, describe the problem and optionally attach evidence." },
     [
       { fr: "Motifs : retard, article manquant, erreur, qualité ou autre.", en: "Types: delay, missing item, wrong item, quality or other." },
-      { fr: "La pièce jointe nécessite un champ sécurisé, absent du schéma actuel.", en: "Attachments need secure storage; the current schema has no attachment field." },
-      { fr: "Envoi WhatsApp indisponible tant que le numéro officiel n’est pas défini.", en: "WhatsApp submission is unavailable until an official number is set." },
+      { fr: "Décris le problème et indique la commande concernée pour que l’équipe puisse t’aider.", en: "Describe the issue and include the order so the team can help." },
     ],
     { sensitive: true },
   ),
@@ -335,7 +332,7 @@ export const screens: ScreenDefinition[] = [
     { fr: "Connexion par email et mot de passe, avec inscription et récupération.", en: "Sign in with email and password, with sign-up and recovery." },
     [
       { fr: "Même erreur affichée que le compte existe ou non ; limitation et anti-robot requis.", en: "Show the same error whether or not an account exists; rate limiting and bot protection required." },
-      { fr: "Supabase Auth est branché côté serveur quand les variables du projet sont configurées ; les rôles sont lus dans user_roles.", en: "Supabase Auth is wired server-side when project variables are configured; roles are read from user_roles." },
+      { fr: "Connecte-toi avec l’adresse e-mail associée à ton compte.", en: "Sign in with the email address linked to your account." },
     ],
     { next: ["S-34", "S-35"], sensitive: true },
   ),
@@ -344,7 +341,7 @@ export const screens: ScreenDefinition[] = [
     { fr: "Nom, email, mot de passe robuste, âge et acceptation légale.", en: "Name, email, strong password, age confirmation and legal consent." },
     [
       { fr: "Téléphone demandé avant la première commande.", en: "Phone number is required before the first order." },
-      { fr: "Confirmation email et création du profil/rôle client gérées par Supabase ; fournisseur email à configurer.", en: "Email confirmation and customer profile/role creation are handled by Supabase; configure its email provider." },
+      { fr: "Tu reçois un lien pour confirmer ton adresse e-mail et protéger ton compte.", en: "You receive a link to confirm your email address and protect your account." },
       { fr: "Mot de passe transmis uniquement à Supabase Auth ; aucune copie n’est stockée par l’application.", en: "Password is sent only to Supabase Auth; the application does not store a copy." },
     ],
     { sensitive: true },
@@ -353,7 +350,7 @@ export const screens: ScreenDefinition[] = [
     "S-35", "client", client, "/mot-de-passe/oublie", { fr: "Récupérer le mot de passe", en: "Recover password" },
     { fr: "Demander un lien de réinitialisation, puis créer un nouveau mot de passe avec jeton court.", en: "Request a reset link, then set a new password with a short-lived token." },
     [
-      { fr: "Demande générique et routes de rappel/réinitialisation disponibles ; le fournisseur email doit être configuré.", en: "Generic request and callback/reset routes are available; configure the email provider." },
+      { fr: "Si ton adresse est reconnue, tu recevras un lien pour choisir un nouveau mot de passe.", en: "If your email address is recognized, you will receive a link to choose a new password." },
       { fr: "Toujours éviter de révéler si une adresse email est enregistrée.", en: "Never reveal whether an email address is registered." },
     ],
     { next: ["S-33"], sensitive: true },
@@ -362,7 +359,7 @@ export const screens: ScreenDefinition[] = [
     "S-36", "client", client, "/legal/conditions", { fr: "Informations légales", en: "Legal information" },
     { fr: "Mentions, confidentialité, cookies, CGU/CGV et remboursements versionnés.", en: "Versioned notices, privacy, cookies, terms and refund policy." },
     [
-      { fr: "Textes et identité légale à faire approuver avant lancement.", en: "Legal text and company identity require approval before launch." },
+      { fr: "Consulte les conditions et la politique de confidentialité avant de créer ton compte.", en: "Review the terms and privacy policy before creating your account." },
       { fr: "Ne pas présenter ce contenu comme un avis juridique.", en: "Do not present this content as legal advice." },
     ],
     { next: ["S-33", "S-29"] },
@@ -400,8 +397,8 @@ export const screens: ScreenDefinition[] = [
     { fr: "Gérer les sections, articles, prix, disponibilité, options et photos.", en: "Manage sections, items, prices, availability, options and photos." },
     [
       { fr: "Photo acceptée seulement avec confirmation des droits.", en: "Photos require confirmation of usage rights." },
-      { fr: "Aperçu client et validation avant publication.", en: "Customer preview and verification before publication." },
-      { fr: "Aucun article n’est ajouté en l’absence de données réelles.", en: "No items are invented when real data is unavailable." },
+      { fr: "Vérifie les informations visibles par les clients avant d’enregistrer.", en: "Review the information customers will see before saving." },
+      { fr: "Ajoute uniquement les produits et les prix validés par ton établissement.", en: "Add only products and prices approved by your establishment." },
     ],
     { next: ["S-08"], sensitive: true },
   ),
@@ -410,7 +407,7 @@ export const screens: ScreenDefinition[] = [
     { fr: "Configurer les plages par jour, les fermetures exceptionnelles et l’heure limite.", en: "Configure daily opening periods, exceptions and last-order cutoff." },
     [
       { fr: "Les horaires validés déterminent l’éligibilité des commandes.", en: "Verified opening hours determine order eligibility." },
-      { fr: "Validation des plages chevauchées et fermetures à finaliser.", en: "Overlapping periods and closure validation need final rules." },
+      { fr: "Mets à jour les horaires et les fermetures exceptionnelles de ton établissement.", en: "Update your establishment’s opening hours and exceptional closures." },
     ],
     { sensitive: true },
   ),
@@ -418,7 +415,7 @@ export const screens: ScreenDefinition[] = [
     "S-44", "partner", partner, "/pro/releves", { fr: "Relevés partenaire", en: "Partner statements" },
     { fr: "Consulter les ventes, commissions et paiements par semaine.", en: "View weekly sales, commissions and payouts." },
     [
-      { fr: "Formule de commission et règlement à valider avec chaque partenaire.", en: "Commission formula and settlement terms require partner agreement." },
+      { fr: "Retrouve ici les informations de vente et les règlements de ton établissement.", en: "Find your establishment’s sales and settlement information here." },
       { fr: "Aucun chiffre de vente fictif n’est affiché.", en: "No fabricated sales figures are shown." },
     ],
     { sensitive: true },
@@ -428,7 +425,7 @@ export const screens: ScreenDefinition[] = [
     { fr: "Présence en ligne, courses assignées et cash de la soirée.", en: "Online availability, assigned deliveries and cash for the shift." },
     [
       { fr: "La disponibilité dépend d’un compte livreur validé.", en: "Availability requires a verified courier account." },
-      { fr: "Aucune course n’est attribuée dans cette prévisualisation.", en: "No delivery is assigned in this preview." },
+      { fr: "Aucune course ne t’est attribuée pour le moment.", en: "No delivery is assigned to you right now." },
     ],
     { next: ["S-51", "S-53"], sensitive: true },
   ),
@@ -437,7 +434,7 @@ export const screens: ScreenDefinition[] = [
     { fr: "Itinéraire, récupérer, démarrer la livraison, appeler ou contacter par WhatsApp.", en: "Route, pickup, start delivery, call or contact by WhatsApp." },
     [
       { fr: "Position partagée toutes les 5–10 secondes pendant la course uniquement.", en: "Location is shared every 5–10 seconds during the active delivery only." },
-      { fr: "Itinéraire externe et cartes requièrent un fournisseur configuré.", en: "External navigation and maps require a configured provider." },
+      { fr: "Vérifie l’adresse de livraison et contacte le client si tu as besoin d’une précision.", en: "Check the delivery address and contact the customer if you need more information." },
     ],
     { next: ["S-52"], sensitive: true },
   ),
@@ -482,8 +479,8 @@ export const screens: ScreenDefinition[] = [
     "S-62", "operations", operator, "/ops/enseignes", { fr: "Gestion des enseignes", en: "Shop management" },
     { fr: "Suivre les prospects, contacts, horaires, rayon, position et onboarding.", en: "Manage prospects, contacts, hours, radius, location and onboarding." },
     [
-      { fr: "Les enseignes initiales sont des prospects non engagés, jamais des partenaires actifs.", en: "Initial shop records are uncommitted prospects, never active partners." },
-      { fr: "Import CSV avec aperçu et rapport avant toute écriture.", en: "CSV import shows a preview and report before any writes." },
+      { fr: "Consulte les informations des enseignes et leur état d’inscription.", en: "Review establishment information and registration status." },
+      { fr: "Vérifie les informations importées avant de les enregistrer.", en: "Review imported information before saving it." },
       { fr: "Activation après accord, horaires, position, rayon et au moins cinq articles validés.", en: "Activate only after agreement, hours, location, radius and at least five verified items." },
     ],
     { next: ["S-63", "S-64"], sensitive: true },
@@ -501,7 +498,7 @@ export const screens: ScreenDefinition[] = [
     "S-64", "operations", operator, "/ops/zones", { fr: "Zones et tarifs", en: "Zones and pricing" },
     { fr: "Dessiner les zones et configurer frais, minimums, suppléments et garantie.", en: "Draw zones and configure fees, order minimums, surcharges and guarantee." },
     [
-      { fr: "Polygones de Douala non fournis : aucun devis fiable n’est encore possible.", en: "Douala delivery polygons are missing; reliable quotes are not yet possible." },
+      { fr: "Les frais de livraison sont confirmés par l’équipe au moment du devis.", en: "The team confirms the delivery fee when preparing the quote." },
       { fr: "Tout changement tarifaire doit être audité.", en: "Every pricing change must be audited." },
     ],
     { sensitive: true },
@@ -510,7 +507,7 @@ export const screens: ScreenDefinition[] = [
     "S-65", "operations", operator, "/ops/utilisateurs", { fr: "Utilisateurs et rôles", en: "Users and roles" },
     { fr: "Rechercher un utilisateur, suspendre, révoquer des sessions et attribuer des rôles.", en: "Find a user, suspend, revoke sessions and assign roles." },
     [
-      { fr: "Les droits d’un agent sur les rôles restent à préciser.", en: "Zone-agent permissions over roles still need definition." },
+      { fr: "Les rôles sont attribués selon les responsabilités de chaque compte.", en: "Roles are assigned according to each account’s responsibilities." },
       { fr: "Chaque changement nécessite une vérification serveur et une trace d’audit.", en: "Every change requires server authorization and an audit record." },
     ],
     { sensitive: true },

@@ -545,6 +545,33 @@ h1 {
   margin: 0;
 }
 
+.demo-banner {
+  padding: 5px 16px;
+  background: #fff3d6;
+  color: #694b14;
+  font-size: 12px;
+  text-align: center;
+}
+
+.admin-mfa-enrollment {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.admin-mfa-qr {
+  width: min(220px, 100%);
+  height: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+}
+
+.admin-mfa-enrollment code {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 800px) {
   .page-shell {
     padding: 18px 20px 16px;
@@ -1383,7 +1410,7 @@ h1 {
   aspect-ratio: 16 / 9;
   place-items: center;
   border-radius: var(--radius-sm);
-  background: var(--color-surface-2);
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface-2));
 }
 
 .storefront-banner-wide {

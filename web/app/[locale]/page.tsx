@@ -3,8 +3,9 @@ import Link from "next/link";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AddressEntry } from "@/components/address-entry";
 import { Icon } from "@/components/ui/icon";
+import { brand } from "@/lib/config/brand";
+import { isScreenGalleryEnabled } from "@/lib/config/features";
 import { routing } from "@/i18n/routing";
-import { publicEnvironment } from "@/lib/env";
 
 type HomePageProps = {
   params: Promise<{ locale: string }>;
@@ -22,8 +23,8 @@ export async function generateMetadata({
 
   return {
     title: {
-      default: `${t("title")} · ${publicEnvironment.NEXT_PUBLIC_BRAND_NAME ?? t("brand")}`,
-      template: `%s · ${publicEnvironment.NEXT_PUBLIC_BRAND_NAME ?? t("brand")}`,
+      default: `${t("title")} · ${brand.name}`,
+      template: `%s · ${brand.name}`,
     },
     description: t("metaDescription"),
   };
@@ -33,25 +34,21 @@ export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("home");
-  const brandName = publicEnvironment.NEXT_PUBLIC_BRAND_NAME ?? t("brand");
 
   return (
     <main className="page-shell">
       <header className="site-header">
-        <a className="wordmark" href={`/${locale}`} aria-label={brandName}>
+        <a className="wordmark" href={`/${locale}`} aria-label={brand.name}>
           <span className="wordmark-mark" aria-hidden="true">
-            <Icon name="pin" />
+            {brand.logoText}
           </span>
           <span>
-            <span className="wordmark-title">{brandName}</span>
+            <span className="wordmark-title">{brand.name}</span>
             <span className="wordmark-subtitle">{t("city")}</span>
           </span>
         </a>
 
         <div className="header-actions">
-          <Link className="screens-shortcut" href={`/${locale}/ecrans`}>
-            {locale === "fr" ? "Tous les écrans" : "All screens"}
-          </Link>
           <span className="service-status">
             <span className="status-dot" aria-hidden="true" />
             {t("serviceArea")}
@@ -80,7 +77,7 @@ export default async function HomePage({ params }: HomePageProps) {
         <div className="welcome-copy">
           <p className="eyebrow">
             <Icon name="spark" />
-            {t("eyebrow")}
+            {brand.tagline[locale === "en" ? "en" : "fr"]}
           </p>
           <h1 id="welcome-title">{t("title")}</h1>
           <p className="welcome-description">{t("description")}</p>
@@ -107,19 +104,20 @@ export default async function HomePage({ params }: HomePageProps) {
             <Icon name="lock" />
             {t("privacyNote")}
           </p>
-          <p className="coverage-attribution">
-            {t("coverageAttribution")}{" "}
-            <a href="https://www.openstreetmap.org/copyright" rel="noreferrer" target="_blank">
-              {t("coverageAttributionLink")}
-            </a>{" "}
-            (ODbL).
-          </p>
         </div>
       </section>
 
       <footer className="site-footer">
         <p>{t("footer")}</p>
         <span>{t("footerLocation")}</span>
+        <Link href={`/${locale}/mentions-et-credits`}>
+          {locale === "fr" ? "Mentions et crédits" : "Credits and notices"}
+        </Link>
+        {isScreenGalleryEnabled && (
+          <Link href={`/${locale}/ecrans`}>
+            {locale === "fr" ? "Catalogue des écrans" : "Screen catalogue"}
+          </Link>
+        )}
       </footer>
     </main>
   );

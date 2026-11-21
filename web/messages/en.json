@@ -1,14 +1,12 @@
 {
   "home": {
-    "brand": "Delivery",
     "city": "Douala, Cameroon",
-    "serviceArea": "Delivery in Douala",
+    "serviceArea": "Douala",
     "languageLabel": "Choose language",
-    "eyebrow": "Day and night, close to you",
     "title": "Where should we deliver?",
     "description": "Enter your neighbourhood and a street or landmark in Douala. You can type any neighbourhood, even if it is not in the suggestions.",
     "metaDescription": "Enter your neighbourhood and a landmark in Douala to continue.",
-    "availabilityNote": "We deliver throughout Douala. A neighbourhood is never rejected just because it is missing from the list.",
+    "availabilityNote": "We deliver across Douala.",
     "addressHeading": "Your delivery address",
     "addressHint": "The city is fixed to Douala. Enter your neighbourhood, then a street or landmark.",
     "cityLabel": "City",
@@ -25,8 +23,6 @@
     "locating": "Finding your location…",
     "continue": "Continue",
     "privacyNote": "Your location is requested only with your permission. You can also enter a landmark.",
-    "coverageAttribution": "Indicative, provisional GPS boundary based on data from",
-    "coverageAttributionLink": "© OpenStreetMap contributors",
     "addressRequired": "Enter your neighbourhood and a street or landmark to continue.",
     "storageError": "This draft could not be saved on this device. Try again or keep your landmark handy.",
     "draftSaved": "Address saved in this tab.",
@@ -36,6 +32,12 @@
     "locationOutsideCoverage": "This location is outside the indicative boundary. You can continue by entering your neighbourhood and a landmark.",
     "coordinatesReceived": "Location accepted for delivery in Douala: {latitude}, {longitude}. Enter your neighbourhood and a landmark too.",
     "footer": "Neighbourhoods can be entered freely. The delivery fee is confirmed from the zone, if configured.",
-    "footerLocation": "Delivery in Douala"
+    "footerLocation": "Douala"
+  },
+  "credits": {
+    "title": "Credits and notices",
+    "openStreetMap": "Geographic data is provided by OpenStreetMap contributors under the ODbL.",
+    "boundary": "The GPS boundary is indicative and is not an official administrative boundary.",
+    "back": "Back to home"
   }
 }

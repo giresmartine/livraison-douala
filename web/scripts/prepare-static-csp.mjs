@@ -12,7 +12,7 @@ const supabaseConfigured = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 );
 const staticPages = ["fr", "en"].flatMap((locale) =>
-  ["", "ecrans", ...(supabaseConfigured ? [] : ["restaurants", "pharmacies"])].map((page) => ({
+  ["", "ecrans", "mentions-et-credits", ...(supabaseConfigured ? [] : ["restaurants", "pharmacies"])].map((page) => ({
     pathname: `/${locale}${page ? `/${page}` : ""}`,
     htmlPath: page
       ? join(".next", "server", "app", locale, `${page}.html`)

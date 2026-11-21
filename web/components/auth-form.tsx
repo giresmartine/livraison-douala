@@ -11,6 +11,7 @@ import {
 } from "@/app/[locale]/auth-actions";
 import type { Locale } from "@/lib/screens";
 import { TurnstileField } from "@/components/turnstile-field";
+import { brand } from "@/lib/config/brand";
 
 type AuthMode = "sign-in" | "sign-up" | "forgot" | "reset";
 
@@ -76,11 +77,8 @@ export function AuthForm({
     <main className="page-shell auth-page">
       <header className="workspace-header">
         <Link className="gallery-brand" href={`/${locale}`}>
-          <span className="brand-symbol" aria-hidden="true">D</span>
-          <span>Douala</span>
-        </Link>
-        <Link className="text-link" href={`/${locale}/ecrans`}>
-          {english ? "Screen catalogue" : "Catalogue des écrans"}
+          <span className="brand-symbol" aria-hidden="true">{brand.logoText}</span>
+          <span>{brand.name}</span>
         </Link>
       </header>
 
@@ -173,8 +171,8 @@ export function AuthForm({
           {!authenticationEnabled && (
             <p className="form-feedback" data-kind="error" role="status">
               {english
-                ? "Account access is not fully configured or enabled. This form will not collect credentials until setup is complete."
-                : "Le service de compte n’est pas entièrement configuré ou activé. Ce formulaire ne recueillera aucun identifiant avant la fin du branchement."}
+                ? "Sign-in is temporarily unavailable. Please try again later."
+                : "La connexion est momentanément indisponible. Réessaie plus tard."}
             </p>
           )}
           {state.error && <p className="form-feedback" data-kind="error" role="alert">{state.error}</p>}
@@ -208,13 +206,7 @@ export function AuthForm({
         </nav>
 
         <p className="auth-security-note">
-          {authenticationEnabled
-            ? english
-              ? "Account access is handled by Supabase Auth."
-              : "Les comptes sont gérés par Supabase Auth."
-            : english
-              ? "Account access will use Supabase Auth. Do not enter real credentials until setup is complete."
-              : "Les comptes passeront par Supabase Auth. Ne saisis pas d’identifiants réels avant la fin du branchement."}
+          {english ? "Your sign-in is protected." : "Ta connexion est protégée."}
         </p>
       </section>
     </main>

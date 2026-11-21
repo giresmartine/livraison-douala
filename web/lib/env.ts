@@ -6,7 +6,6 @@ const optionalValue = z.preprocess(
 );
 
 const publicEnvironmentSchema = z.object({
-  NEXT_PUBLIC_BRAND_NAME: optionalValue,
   NEXT_PUBLIC_SUPABASE_URL: z.preprocess(
     (value) => (value === "" ? undefined : value),
     z.string().url().optional(),
@@ -19,6 +18,10 @@ const publicEnvironmentSchema = z.object({
   ),
   NEXT_PUBLIC_TERMS_VERSION: optionalValue,
   NEXT_PUBLIC_PRIVACY_VERSION: optionalValue,
+  NEXT_PUBLIC_SHOW_SCREEN_GALLERY: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.enum(["true", "false"]).optional(),
+  ),
 }).superRefine((environment, context) => {
   const hasSupabaseUrl = Boolean(environment.NEXT_PUBLIC_SUPABASE_URL);
   const hasSupabaseKey = Boolean(environment.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -33,13 +36,13 @@ const publicEnvironmentSchema = z.object({
 });
 
 export const publicEnvironment = publicEnvironmentSchema.parse({
-  NEXT_PUBLIC_BRAND_NAME: process.env.NEXT_PUBLIC_BRAND_NAME,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   NEXT_PUBLIC_TERMS_VERSION: process.env.NEXT_PUBLIC_TERMS_VERSION,
   NEXT_PUBLIC_PRIVACY_VERSION: process.env.NEXT_PUBLIC_PRIVACY_VERSION,
+  NEXT_PUBLIC_SHOW_SCREEN_GALLERY: process.env.NEXT_PUBLIC_SHOW_SCREEN_GALLERY,
 });
 
 export const isSupabaseConfigured = Boolean(

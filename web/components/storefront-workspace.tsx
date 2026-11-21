@@ -8,6 +8,7 @@ import { saveOrderAddress, submitFeeQuoteOrder } from "@/app/[locale]/order-acti
 import { doualaCoverage, isWithinDoualaCoverage } from "@/lib/config/coverage";
 import type { Coordinates } from "@/lib/config/coverage";
 import { buildFeeQuoteOrderItems } from "@/lib/order-flow";
+import { brand } from "@/lib/config/brand";
 import type { Locale, ScreenDefinition } from "@/lib/screens";
 import type {
   StorefrontData,
@@ -996,9 +997,9 @@ function StorefrontHeader({ locale, title }: { locale: Locale; title: string }) 
   return (
     <header className="storefront-header">
       <Link className="gallery-brand" href={`/${locale}`}>
-        <span className="brand-symbol" aria-hidden="true">D</span>
+        <span className="brand-symbol" aria-hidden="true">{brand.logoText}</span>
         <span>
-          <strong>{english ? "Delivery · Now" : "Livraison · Maintenant"}</strong>
+          <strong>{brand.name}</strong>
           <small>{title}</small>
         </span>
       </Link>

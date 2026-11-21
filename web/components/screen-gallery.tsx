@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Locale, ScreenGroup } from "@/lib/screens";
 import { screenGroups, screenHref, screens } from "@/lib/screens";
+import { brand } from "@/lib/config/brand";
 
 const groupOrder: ScreenGroup[] = ["client", "partner", "courier", "operations"];
 
@@ -14,20 +15,20 @@ export function ScreenGallery({ locale }: { locale: Locale }) {
     locale === "fr"
       ? {
           eyebrow: "Plan du produit",
-          title: "Tous les écrans",
-          count: (count: number) => `${count} écrans décrits dans le cahier`,
+          title: "Parcours disponibles",
+          count: (count: number) => `${count} parcours`,
           search: "Rechercher un écran, un rôle ou une fonctionnalité",
           all: "Tous",
-          preview: "PRÉVISUALISATION",
+          preview: "Ouvrir",
           back: "Retour à l’accueil",
         }
       : {
           eyebrow: "Product map",
-          title: "All screens",
-          count: (count: number) => `${count} screens described in the specification`,
+          title: "Available journeys",
+          count: (count: number) => `${count} journeys`,
           search: "Search screens, roles or features",
           all: "All",
-          preview: "PREVIEW",
+          preview: "Open",
           back: "Back to home",
         };
 
@@ -54,10 +55,8 @@ export function ScreenGallery({ locale }: { locale: Locale }) {
     <main className="screen-gallery">
       <header className="gallery-header">
         <Link className="gallery-brand" href={`/${locale}`}>
-          <span className="brand-symbol" aria-hidden="true">
-            D
-          </span>
-          <span>Douala</span>
+          <span className="brand-symbol" aria-hidden="true">{brand.logoText}</span>
+          <span>{brand.name}</span>
         </Link>
         <Link className="text-link" href={`/${locale}`}>
           {copy.back}

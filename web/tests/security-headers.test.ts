@@ -36,6 +36,7 @@ describe("content security policy", () => {
 
   it("only identifies the public prerendered route set as static", () => {
     expect(isPublicStaticPath("/fr")).toBe(true);
+    expect(isPublicStaticPath("/fr/mentions-et-credits")).toBe(true);
     expect(isPublicStaticPath("/en/restaurants")).toBe(true);
     expect(isPublicStaticPath("/fr/pharmacies/")).toBe(true);
     expect(isPublicStaticPath("/fr/restaurants", true)).toBe(false);

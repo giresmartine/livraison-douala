@@ -58,7 +58,7 @@ export function isPublicStaticPath(
   pathname: string,
   supabaseConfigured = false,
 ) {
-  if (/^\/(fr|en)(?:\/ecrans)?\/?$/.test(pathname)) return true;
+  if (/^\/(fr|en)(?:\/ecrans|\/mentions-et-credits)?\/?$/.test(pathname)) return true;
   return (
     !supabaseConfigured &&
     /^\/(fr|en)\/(?:restaurants|pharmacies)\/?$/.test(pathname)

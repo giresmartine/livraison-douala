@@ -1,14 +1,12 @@
 {
   "home": {
-    "brand": "Livraison",
     "city": "Douala, Cameroun",
-    "serviceArea": "Livraison à Douala",
+    "serviceArea": "Douala",
     "languageLabel": "Choisir la langue",
-    "eyebrow": "Jour et nuit, près de toi",
     "title": "Où veux-tu être livré ?",
     "description": "Indique ton quartier et une rue ou un repère à Douala. Tu peux saisir librement un quartier, même s’il n’apparaît pas dans les suggestions.",
     "metaDescription": "Saisis ton quartier et un repère à Douala pour continuer.",
-    "availabilityNote": "Nous livrons dans tout Douala. Aucun quartier n’est refusé parce qu’il manque dans la liste.",
+    "availabilityNote": "Nous livrons dans tout Douala.",
     "addressHeading": "Ton adresse de livraison",
     "addressHint": "La ville est fixée à Douala. Indique ton quartier, puis une rue ou un repère.",
     "cityLabel": "Ville",
@@ -25,8 +23,6 @@
     "locating": "Recherche de ta position…",
     "continue": "Continuer",
     "privacyNote": "Ta position n’est demandée qu’avec ton accord. Tu peux aussi saisir un repère.",
-    "coverageAttribution": "Limite GPS indicative et provisoire basée sur les données",
-    "coverageAttributionLink": "© contributeurs OpenStreetMap",
     "addressRequired": "Saisis ton quartier et une rue ou un repère pour continuer.",
     "storageError": "Le brouillon n’a pas pu être conservé sur cet appareil. Réessaie ou note ton repère.",
     "draftSaved": "Adresse gardée dans cet onglet.",
@@ -36,6 +32,12 @@
     "locationOutsideCoverage": "Cette position dépasse la limite indicative. Tu peux continuer en saisissant ton quartier et un repère.",
     "coordinatesReceived": "Position acceptée dans la zone de livraison de Douala : {latitude}, {longitude}. Saisis aussi ton quartier et un repère.",
     "footer": "Les quartiers sont saisis librement. Les frais sont confirmés selon la zone si elle existe.",
-    "footerLocation": "Livraison à Douala"
+    "footerLocation": "Douala"
+  },
+  "credits": {
+    "title": "Mentions et crédits",
+    "openStreetMap": "Les données géographiques sont fournies par les contributeurs OpenStreetMap, sous licence ODbL.",
+    "boundary": "La limite GPS est indicative et ne constitue pas une délimitation administrative officielle.",
+    "back": "Retour à l’accueil"
   }
 }

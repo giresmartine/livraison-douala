@@ -30,6 +30,7 @@ const adminFeeQuoteQueueSchema = z.object({
     total: z.number().int().nonnegative(),
     quote_requested_at: z.string().datetime({ offset: true }),
     quote_expires_at: z.string().datetime({ offset: true }).nullable(),
+    quote_replacement_requested_at: z.string().datetime({ offset: true }).nullable(),
     quote_version: z.number().int().nonnegative(),
     created_at: z.string().datetime({ offset: true }),
     partner_name: z.string().nullable(),
@@ -121,7 +122,11 @@ export async function renderScreenPreview({
     }
   }
 
-  if (screen.id === "S-20" && typeof query.order === "string" && authenticatedUserId) {
+  if (
+    (screen.id === "S-20" || screen.id === "S-28") &&
+    typeof query.order === "string" &&
+    authenticatedUserId
+  ) {
     const orderId = z.string().uuid().safeParse(query.order);
     if (!orderId.success) notFound();
 
@@ -143,13 +148,37 @@ export async function renderScreenPreview({
       total: z.number().int(),
       quote_version: z.number().int(),
       quote_expires_at: z.string().nullable(),
+      quote_replacement_deadline_at: z.string().nullable(),
       cancel_reason: z.string().nullable(),
       created_at: z.string(),
+      partner_name: z.string().nullable(),
+      delivery_address: z.object({
+        neighborhood: z.string().nullable(),
+        landmark: z.string(),
+        details: z.string().nullable(),
+      }).nullable(),
+      items: z.array(z.object({
+        name: z.string(),
+        quantity: z.number().int().positive(),
+        unit_price: z.number().int().nonnegative(),
+        line_total: z.number().int().nonnegative(),
+        options: z.array(z.object({
+          id: z.string().uuid(),
+          name: z.string(),
+          price_delta: z.number().int(),
+        })),
+      })),
     });
     const order = orderSchema.safeParse(data);
     if (!order.success) notFound();
 
-    return <FeeQuoteTracking locale={locale} order={order.data} />;
+    return (
+      <FeeQuoteTracking
+        detail={screen.id === "S-28"}
+        locale={locale}
+        order={order.data}
+      />
+    );
   }
 
   if (["S-05", "S-06", "S-07", "S-08", "S-09", "S-12", "S-13", "S-14", "S-15", "S-16", "S-17"].includes(screen.id)) {

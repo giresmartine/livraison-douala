@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   cancelAdminFeeQuote,
@@ -19,6 +20,7 @@ export type AdminFeeQuoteOrder = {
   total: number;
   quote_requested_at: string;
   quote_expires_at: string | null;
+  quote_replacement_requested_at: string | null;
   quote_version: number;
   created_at: string;
   partner_name: string | null;
@@ -217,6 +219,7 @@ export function AdminFeeQuoteQueue({
     if (code === "admin_required") return english ? "Administrator access is required." : "Cette action est réservée à l’administrateur.";
     if (code === "delivery_fee_out_of_limit") return english ? "The amount exceeds the configured limit." : "Le montant dépasse le plafond configuré.";
     if (code === "order_not_found") return english ? "This order is no longer available." : "Cette commande n’est plus disponible.";
+    if (code === "quote_replacement_expired") return english ? "The replacement deadline has passed. The customer can start a new order." : "Le délai de réémission est dépassé. Le client peut recommencer une commande.";
     if (code === "order_not_quoteable") return english ? "This order can no longer receive a quote." : "Cette commande ne peut plus recevoir de devis.";
     if (code === "quote_not_provided") return english ? "The order timed out and was cancelled." : "Le délai est dépassé ; la commande a été annulée.";
     if (code === "invalid_quote") return english ? "Enter a whole amount in XAF." : "Saisis un montant entier en XAF.";
@@ -235,6 +238,9 @@ export function AdminFeeQuoteQueue({
       <header className="storefront-page-header">
         <p className="eyebrow">{english ? "ADMIN · FEE QUOTES" : "ADMIN · DEVIS DE FRAIS"}</p>
         <h1>{english ? "Delivery fee quote queue" : "File des devis de livraison"}</h1>
+        <Link className="text-link" href={`/${locale}/ops/securite`}>
+          {english ? "Set up two-step verification" : "Configurer la vérification en deux étapes"}
+        </Link>
       </header>
       <p>
         {english
@@ -248,7 +254,12 @@ export function AdminFeeQuoteQueue({
           {orders.map((order) => {
             const isSent = order.status === "awaiting_customer_confirmation";
             const isReissue = order.status === "cancelled";
-            const wait = minutesWaiting(order.quote_requested_at, serverNow);
+            const wait = minutesWaiting(
+              isReissue
+                ? order.quote_replacement_requested_at ?? order.quote_requested_at
+                : order.quote_requested_at,
+              serverNow,
+            );
             return (
               <article className="storefront-menu-section" key={order.id}>
                 <header>
@@ -264,7 +275,9 @@ export function AdminFeeQuoteQueue({
                     {isSent
                       ? english ? `Quote sent · version ${order.quote_version}` : `Devis envoyé · version ${order.quote_version}`
                       : isReissue
-                        ? english ? `Reissue available · next version ${order.quote_version + 1}` : `Réémission possible · prochaine version ${order.quote_version + 1}`
+                        ? english
+                          ? `Replacement requested · next version ${order.quote_version + 1}`
+                          : `Nouveau devis demandé · prochaine version ${order.quote_version + 1}`
                         : english ? "Waiting for a quote" : "En attente d’un devis"}
                   </p>
                 </header>

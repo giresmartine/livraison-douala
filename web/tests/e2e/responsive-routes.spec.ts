@@ -104,6 +104,13 @@ test("all registered routes fit the viewport at mobile and tablet widths when au
 
 test("unknown routes return an HTTP 404", async ({ page }) => {
   const response = await page.goto("/fr/nimporte-quoi", { waitUntil: "load" });
-
   expect(response?.status()).toBe(404);
+
+  const galleryResponse = await page.goto("/fr/ecrans", { waitUntil: "load" });
+  expect(galleryResponse?.status()).toBe(404);
+});
+
+test("admin MFA setup redirects visitors without a session to sign-in", async ({ page }) => {
+  await page.goto("/fr/ops/securite", { waitUntil: "load" });
+  await expect(page).toHaveURL(/\/fr\/connexion\?next=/);
 });

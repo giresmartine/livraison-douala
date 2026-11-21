@@ -6,6 +6,7 @@ import type { FormEvent, ReactNode } from "react";
 import { Icon } from "@/components/ui/icon";
 import type { Locale, ScreenDefinition } from "@/lib/screens";
 import { screenHref } from "@/lib/screens";
+import { brand } from "@/lib/config/brand";
 
 function tx(locale: Locale, fr: string, en: string) {
   return locale === "en" ? en : fr;
@@ -89,10 +90,10 @@ function AppBar({
     <header className="ps-bar">
       <Link className="ps-brand" href={screen.group === "client" ? `/${locale}` : screenHref(locale, screen.href)}>
         <span className="ps-mark" aria-hidden="true">
-          <Icon name="pin" />
+          {brand.logoText}
         </span>
         <span>
-          <strong>{ops ? screen.role[locale] : tx(locale, "Livraison · Maintenant", "Delivery · Now")}</strong>
+          <strong>{ops ? screen.role[locale] : brand.name}</strong>
           <small>{ops ? screen.id : place}</small>
         </span>
         {!ops && <Icon name="chevron" />}
