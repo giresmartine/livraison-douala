@@ -2,11 +2,13 @@
 .env
 .env.*
 !.env.example
+web/.dev-accounts.txt*
 node_modules/
 .next/
 .vercel/
 coverage/
 *.tsbuildinfo
+web/supabase/.temp/
 
 # Local research data and archives
 /restaurants_a_contacter.csv

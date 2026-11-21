@@ -1,4 +1,4 @@
-# Livraison à Douala
+# Douala Livraison
 
 Application web progressive bilingue pour une plateforme de livraison à Douala. Le développement suit les documents de conception du dossier `docs/` et avance écran par écran.
 

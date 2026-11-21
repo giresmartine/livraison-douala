@@ -236,19 +236,24 @@ export function getPartnerAvailability(
     end: timeInMinutes(entry.closes_at),
   }));
   const matchingWindow = openWindows.find(({ start, end, isToday }) =>
-    end <= start
+    end === start
+      ? isToday
+      : end < start
       ? isToday
         ? clock.minute >= start
         : clock.minute < end
       : clock.minute >= start && clock.minute < end,
   );
   const hoursText = today.map((entry) =>
-    `${formatTime(entry.opens_at)}–${formatTime(entry.closes_at)}`,
+    timeInMinutes(entry.opens_at) === timeInMinutes(entry.closes_at)
+      ? "00:00–24:00"
+      : `${formatTime(entry.opens_at)}–${formatTime(entry.closes_at)}`,
   );
 
   if (!matchingWindow) return { hoursText, isOpen: false, canOrder: false };
 
-  const overnight = matchingWindow.end <= matchingWindow.start;
+  const allDay = matchingWindow.end === matchingWindow.start;
+  const overnight = matchingWindow.end < matchingWindow.start;
   const minutesUntilClose = overnight && matchingWindow.isToday
     ? matchingWindow.end + 24 * 60 - clock.minute
     : matchingWindow.end - clock.minute;
@@ -256,7 +261,7 @@ export function getPartnerAvailability(
   return {
     hoursText,
     isOpen: true,
-    canOrder: minutesUntilClose > matchingWindow.entry.last_order_before_close,
+    canOrder: allDay || minutesUntilClose > matchingWindow.entry.last_order_before_close,
   };
 }
 

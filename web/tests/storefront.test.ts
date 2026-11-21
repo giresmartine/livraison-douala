@@ -29,6 +29,22 @@ describe("partner opening hours", () => {
       getPartnerAvailability(partnerId, overnightThursday, new Date("2026-01-01T00:30:00Z")),
     ).toMatchObject({ isOpen: false, canOrder: false });
   });
+
+  it("supports a full-day schedule without inventing a closing window", () => {
+    expect(
+      getPartnerAvailability(partnerId, [{
+        partner_id: partnerId,
+        weekday: 5,
+        opens_at: "00:00:00",
+        closes_at: "00:00:00",
+        last_order_before_close: 30,
+      }], new Date("2026-01-02T22:59:00Z")),
+    ).toMatchObject({
+      hoursText: ["00:00–24:00"],
+      isOpen: true,
+      canOrder: true,
+    });
+  });
 });
 
 describe("storefront routes", () => {
