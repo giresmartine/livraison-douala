@@ -61,7 +61,10 @@ test("all registered routes fit the viewport at mobile and tablet widths when au
 
         if (screen.sensitive) {
           expect(response?.status(), `${screen.id} should load for its authorized role`).toBe(200);
-          expect(new URL(page.url()).pathname).toBe(new URL(`/fr${path}`, baseURL).pathname);
+          const expectedPath = screen.id === "S-16"
+            ? "/fr/commande/recapitulatif"
+            : `/fr${path}`;
+          expect(new URL(page.url()).pathname).toBe(new URL(expectedPath, baseURL).pathname);
         }
       }
     }
@@ -79,8 +82,9 @@ test("all registered routes fit the viewport at mobile and tablet widths when au
     await expect(clientPage.getByLabel("Ville")).toHaveAttribute("readonly", "");
     await clientPage.getByLabel("Quartier").fill("Quartier libre");
     await clientPage.getByLabel("Repère / indications").fill("Repère de test");
-    await clientPage.getByRole("button", { name: "Enregistrer le brouillon et continuer" }).click();
-    await expect(clientPage).toHaveURL(/\/fr\/commande\/offres$/);
+    await clientPage.getByRole("button", { name: "Enregistrer l’adresse et continuer" }).click();
+    await expect(clientPage).toHaveURL(/\/fr\/commande\/recapitulatif$/);
+    await expect(clientPage.getByText("Ton panier est vide. Aucune commande n’a été créée.")).toBeVisible();
     const addressDraft = await clientPage.evaluate(() =>
       JSON.parse(sessionStorage.getItem("delivery-address-draft") ?? "null"),
     );
