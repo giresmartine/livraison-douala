@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(15);
 
 insert into auth.users (
   id,
@@ -175,6 +175,29 @@ values
   '00000000-0000-4000-8000-000000000601',
   'TEST - legacy_acceptance'
 );
+
+set local role authenticated;
+
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000601', true);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-4000-8000-000000000601","role":"authenticated","aal":"aal1"}',
+  true
+);
+select throws_ok(
+  $$select id from public.orders where id = '00000000-0000-4000-8000-000000000621'$$,
+  '42501',
+  'permission denied for table orders',
+  'direct order table access is not granted to authenticated users'
+);
+
+reset role;
+grant select on public.orders,
+  public.order_items,
+  public.order_status_history,
+  public.deliveries,
+  public.couriers
+to authenticated;
 
 set local role authenticated;
 
