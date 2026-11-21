@@ -1,10 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { ScreenWorkspace } from "@/components/screen-workspace";
+import { AdminFeeQuoteQueue } from "@/components/admin-fee-quote-queue";
 import { StorefrontWorkspace } from "@/components/storefront-workspace";
 import { getScreenByPath } from "@/lib/screens";
 import type { ScreenGroup } from "@/lib/screens";
 import { requireRole } from "@/lib/auth";
-import { isAuthenticationEnabled } from "@/lib/env";
+import { isAuthenticationEnabled, publicEnvironment } from "@/lib/env";
 import { getPartnerMenu, getStorefrontData, searchStorefront } from "@/lib/storefront";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { FeeQuoteTracking } from "@/components/fee-quote-tracking";
@@ -17,6 +18,37 @@ type ScreenPreviewPageProps = {
   path: string[];
   query: Record<string, string | string[] | undefined>;
 };
+
+const adminFeeQuoteQueueSchema = z.object({
+  max_delivery_fee_xaf: z.number().int().nonnegative(),
+  server_now: z.string().datetime({ offset: true }),
+  orders: z.array(z.object({
+    id: z.string().uuid(),
+    status: z.enum(["pending_fee_quote", "awaiting_customer_confirmation", "cancelled"]),
+    subtotal: z.number().int().nonnegative(),
+    delivery_fee: z.number().int().nonnegative().nullable(),
+    total: z.number().int().nonnegative(),
+    quote_requested_at: z.string().datetime({ offset: true }),
+    quote_expires_at: z.string().datetime({ offset: true }).nullable(),
+    quote_version: z.number().int().nonnegative(),
+    created_at: z.string().datetime({ offset: true }),
+    partner_name: z.string().nullable(),
+    delivery_address: z.object({
+      neighborhood: z.string().nullable(),
+      landmark: z.string(),
+      details: z.string().nullable(),
+    }).nullable(),
+    items: z.array(z.object({
+      name: z.string(),
+      quantity: z.number().int().positive(),
+      options: z.array(z.object({
+        id: z.string().uuid(),
+        name: z.string(),
+        price_delta: z.number().int(),
+      })),
+    })),
+  })),
+});
 
 export async function renderScreenPreview({
   locale,
@@ -51,6 +83,42 @@ export async function renderScreenPreview({
     };
     const { user } = await requireRole(locale, rolesByGroup[screen.group], `/${locale}/${pathname}`);
     authenticatedUserId = user.id;
+  }
+
+  if (screen.id === "S-61" && authenticatedUserId) {
+    const supabase = await createSupabaseServerClient();
+    const { data: roles, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", authenticatedUserId);
+    if (roleError) {
+      console.error("Could not verify access to the admin fee quote queue.");
+      throw new Error("Unable to load order permissions.");
+    }
+
+    if (roles.some((entry) => entry.role === "admin")) {
+      const { data, error } = await supabase.rpc("get_admin_fee_quote_queue");
+      if (error) {
+        console.error("Could not load the audited admin fee quote queue.");
+        throw new Error("Unable to load the fee quote queue.");
+      }
+
+      const queue = adminFeeQuoteQueueSchema.safeParse(data);
+      if (!queue.success) {
+        console.error("The admin fee quote queue returned an invalid response.");
+        throw new Error("Unable to load the fee quote queue.");
+      }
+
+      return (
+        <AdminFeeQuoteQueue
+          locale={locale}
+          maxDeliveryFee={queue.data.max_delivery_fee_xaf}
+          orders={queue.data.orders}
+          serverNow={queue.data.server_now}
+          turnstileSiteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+        />
+      );
+    }
   }
 
   if (screen.id === "S-20" && typeof query.order === "string" && authenticatedUserId) {

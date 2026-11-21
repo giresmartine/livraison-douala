@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { isWithinDoualaCoverage } from "@/lib/config/coverage";
 import { buildFeeQuoteOrderItems, parseGeographyPoint } from "@/lib/order-flow";
-import { isAuthenticationEnabled } from "@/lib/env";
+import { isAuthenticationEnabled, publicEnvironment } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -60,6 +60,31 @@ async function getActiveCustomer(): Promise<CustomerSession> {
   }
 
   return { ok: true, supabase, userId: user.id };
+}
+
+async function getActiveAdmin() {
+  if (!isAuthenticationEnabled) return { ok: false as const, code: "auth_required" };
+
+  const supabase = await createSupabaseServerClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return { ok: false as const, code: "auth_required" };
+
+  const [{ data: profile, error: profileError }, { data: roles, error: roleError }] =
+    await Promise.all([
+      supabase.from("profiles").select("status").eq("id", user.id).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", user.id),
+    ]);
+
+  if (profileError || roleError) {
+    console.error("Could not verify the administrator account.");
+    return { ok: false as const, code: "account_unavailable" };
+  }
+  if (profile?.status !== "active") return { ok: false as const, code: "account_unavailable" };
+  if (!roles.some((entry) => entry.role === "admin")) {
+    return { ok: false as const, code: "admin_required" };
+  }
+
+  return { ok: true as const, supabase, user };
 }
 
 export async function saveOrderAddress(input: unknown) {
@@ -120,6 +145,9 @@ function orderErrorCode(message: string): string {
     "partner_closed",
     "partner_minimum_not_met",
     "order_total_out_of_range",
+    "delivery_fee_out_of_limit",
+    "order_not_quoteable",
+    "order_not_found",
   ];
   return knownCodes.find((code) => message.includes(code)) ?? "order_submission_failed";
 }
@@ -185,6 +213,182 @@ export async function submitFeeQuoteOrder(input: unknown) {
   }
 
   return { ok: true as const, orderId: orderId.data };
+}
+
+export async function sendFeeQuote(input: unknown) {
+  const parsed = z.object({
+    orderId: z.string().uuid(),
+    deliveryFee: z.number().int().nonnegative().max(2147483647),
+  }).safeParse(input);
+  if (!parsed.success) return { ok: false as const, code: "invalid_quote" };
+
+  const admin = await getActiveAdmin();
+  if (!admin.ok) return admin;
+
+  const { data, error } = await admin.supabase.rpc("send_order_fee_quote", {
+    p_order: parsed.data.orderId,
+    p_delivery_fee: parsed.data.deliveryFee,
+  });
+  if (error) {
+    const code = error.message.includes("admin_reauth_required")
+      ? "admin_reauth_required"
+      : error.message.includes("admin_required")
+        ? "admin_required"
+        : orderErrorCode(error.message);
+    console.error("Admin fee quote action failed.", code);
+    return { ok: false as const, code };
+  }
+
+  const result = z.enum([
+    "quote_sent",
+    "quote_reissued",
+    "cancelled_quote_not_provided",
+  ]).safeParse(data);
+  if (!result.success) {
+    console.error("Admin fee quote action returned an invalid result.");
+    return { ok: false as const, code: "quote_action_failed" };
+  }
+  return { ok: true as const, result: result.data };
+}
+
+export async function cancelAdminFeeQuote(input: unknown) {
+  const parsed = z.object({ orderId: z.string().uuid() }).safeParse(input);
+  if (!parsed.success) return { ok: false as const, code: "invalid_order" };
+
+  const admin = await getActiveAdmin();
+  if (!admin.ok) return admin;
+
+  const { data, error } = await admin.supabase.rpc("cancel_order_fee_quote", {
+    p_order: parsed.data.orderId,
+  });
+  if (error) {
+    const code = error.message.includes("admin_reauth_required")
+      ? "admin_reauth_required"
+      : error.message.includes("admin_required")
+        ? "admin_required"
+        : "quote_cancellation_failed";
+    console.error("Admin fee quote cancellation failed.", code);
+    return { ok: false as const, code };
+  }
+
+  return data === "quote_replaced"
+    ? { ok: true as const }
+    : { ok: false as const, code: "quote_cancellation_failed" };
+}
+
+export async function reauthenticateAdmin(input: unknown) {
+  const parsed = z.object({
+    password: z.string().min(1).max(128),
+    captchaToken: z.string().trim().min(1).max(2048),
+  }).safeParse(input);
+  if (!parsed.success) return { ok: false as const, code: "invalid_reauthentication" };
+  if (!publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+    return { ok: false as const, code: "reauthentication_unavailable" };
+  }
+
+  const admin = await getActiveAdmin();
+  if (!admin.ok) return admin;
+  if (!admin.user.email) return { ok: false as const, code: "reauthentication_failed" };
+
+  const { data: signIn, error: signInError } = await admin.supabase.auth.signInWithPassword({
+    email: admin.user.email,
+    password: parsed.data.password,
+    options: { captchaToken: parsed.data.captchaToken },
+  });
+  if (signInError || signIn.user?.id !== admin.user.id) {
+    return { ok: false as const, code: "reauthentication_failed" };
+  }
+
+  const { data: factors, error: factorError } = await admin.supabase.auth.mfa.listFactors();
+  if (factorError) {
+    console.error("Could not load administrator MFA factors.");
+    return { ok: false as const, code: "mfa_verification_unavailable" };
+  }
+
+  const totpFactor = factors.totp.find((factor) => factor.status === "verified");
+  if (totpFactor) {
+    return {
+      ok: true as const,
+      needsMfa: true as const,
+      method: "totp" as const,
+      factorId: totpFactor.id,
+    };
+  }
+
+  const phoneFactor = factors.phone.find((factor) => factor.status === "verified");
+  if (phoneFactor) {
+    const { data: challenge, error: challengeError } = await admin.supabase.auth.mfa.challenge({
+      factorId: phoneFactor.id,
+      channel: "sms",
+    });
+    if (challengeError) {
+      console.error("Could not start administrator MFA verification.");
+      return { ok: false as const, code: "mfa_verification_unavailable" };
+    }
+    return {
+      ok: true as const,
+      needsMfa: true as const,
+      method: "phone" as const,
+      factorId: phoneFactor.id,
+      challengeId: challenge.id,
+    };
+  }
+
+  if (factors.all.some((factor) => factor.status === "verified")) {
+    return { ok: false as const, code: "mfa_method_unavailable" };
+  }
+  return { ok: true as const, needsMfa: false as const };
+}
+
+export async function verifyAdminMfa(input: unknown) {
+  const parsed = z.discriminatedUnion("method", [
+    z.object({
+      method: z.literal("totp"),
+      factorId: z.string().uuid(),
+      code: z.string().trim().regex(/^\d{6,8}$/),
+    }),
+    z.object({
+      method: z.literal("phone"),
+      factorId: z.string().uuid(),
+      challengeId: z.string().uuid(),
+      code: z.string().trim().regex(/^\d{6,8}$/),
+    }),
+  ]).safeParse(input);
+  if (!parsed.success) return { ok: false as const, code: "invalid_mfa_code" };
+
+  const admin = await getActiveAdmin();
+  if (!admin.ok) return admin;
+  const { data: factors, error: factorError } = await admin.supabase.auth.mfa.listFactors();
+  if (factorError) {
+    console.error("Could not load administrator MFA factors.");
+    return { ok: false as const, code: "mfa_verification_unavailable" };
+  }
+
+  const verifiedFactor = parsed.data.method === "totp"
+    ? factors.totp.find((factor) => factor.id === parsed.data.factorId && factor.status === "verified")
+    : factors.phone.find((factor) => factor.id === parsed.data.factorId && factor.status === "verified");
+  if (!verifiedFactor) return { ok: false as const, code: "mfa_factor_unavailable" };
+
+  const verification = parsed.data.method === "totp"
+    ? await admin.supabase.auth.mfa.challengeAndVerify({
+        factorId: parsed.data.factorId,
+        code: parsed.data.code,
+      })
+    : await admin.supabase.auth.mfa.verify({
+        factorId: parsed.data.factorId,
+        challengeId: parsed.data.challengeId,
+        code: parsed.data.code,
+      });
+  if (verification.error) return { ok: false as const, code: "invalid_mfa_code" };
+
+  const { data: assurance, error: assuranceError } =
+    await admin.supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assuranceError || assurance.currentLevel !== "aal2") {
+    console.error("Administrator MFA did not establish AAL2.");
+    return { ok: false as const, code: "mfa_verification_failed" };
+  }
+
+  return { ok: true as const };
 }
 
 export async function acceptFeeQuote(input: unknown) {
