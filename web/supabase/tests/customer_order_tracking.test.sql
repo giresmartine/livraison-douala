@@ -89,11 +89,39 @@ select is(
   'quote_expired',
   'an expired quote is cancelled when its owner reads the tracking screen'
 );
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000452', true);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', '00000000-0000-4000-8000-000000000452',
+    'role', 'authenticated',
+    'aal', 'aal1',
+    'amr', jsonb_build_array(jsonb_build_object(
+      'method', 'password',
+      'timestamp', floor(extract(epoch from clock_timestamp()))::bigint
+    ))
+  )::text,
+  true
+);
 select throws_ok(
   $$select public.get_customer_fee_quote_order('00000000-0000-4000-8000-000000000461')$$,
   'P0001',
   'order_not_found',
   'a different customer cannot read the order'
+);
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000451', true);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', '00000000-0000-4000-8000-000000000451',
+    'role', 'authenticated',
+    'aal', 'aal1',
+    'amr', jsonb_build_array(jsonb_build_object(
+      'method', 'password',
+      'timestamp', floor(extract(epoch from clock_timestamp()))::bigint
+    ))
+  )::text,
+  true
 );
 select is(
   (select count(*) from public.audit_logs
@@ -106,9 +134,7 @@ select is(
   2::bigint,
   'lazy cancellation writes an audit entry for each order'
 );
-update public.order_flow_config
-set no_quote_timeout_seconds = null
-where singleton;
+delete from public.order_flow_config where singleton;
 select throws_ok(
   $$select public.get_customer_fee_quote_order('00000000-0000-4000-8000-000000000461')$$,
   'P0001',
