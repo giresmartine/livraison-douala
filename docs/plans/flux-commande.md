@@ -44,14 +44,13 @@ Sources vérifiées le 21 novembre 2026 :
 
 Les tests SQL doivent couvrir AMR frais, 16 minutes, absent, `iat` frais avec AMR absent/ancien, `aal` insuffisant et configuration absente. La fraîcheur AMR est également testée contre un renouvellement de JWT simulé où `iat` avance mais l'AMR reste inchangé.
 
-## Écrans existants
+## Écrans du flux
 
-Aucun code écran supplémentaire :
-
-- **S-17 — Récapitulatif** (`/commande/recapitulatif`) : articles, adresse/quartier, sous-total, frais « Confirmés avant tout paiement », bouton « Envoyer ma commande » et message « Aucun paiement maintenant ».
-- **S-20 — Suivi** (`/commande/apercu/suivi`) : état « En attente des frais de livraison » et frise « Commande envoyée → Frais confirmés → Ton accord ». Realtime si disponible, sinon actualisation périodique ; notifications dans l'application uniquement.
-- **S-28 — Détail commande** (`/commandes/apercu`) : devis XAF, version, échéance, accepter/refuser avec confirmation, états expiré/annulé/déjà traité.
-- **S-61 — Commandes et dispatch** (`/ops/commandes`) : file dédiée de devis en attente, triée du plus ancien, durée d'attente et détail limité au besoin de traitement. La lecture sensible par un admin passe par une fonction journalisée.
+- **S-15 — Adresse de livraison** (`/commande/livraison`) : quartier libre, repère et instructions sont enregistrés pour le client connecté ; GPS facultatif, vérifié dans la couverture Douala. Un GPS détecté hors zone bloque l'enregistrement.
+- **S-17 — Récapitulatif** (`/commande/recapitulatif`) : articles et adresse, prix non autoritatifs du panier non repris ; l'envoi appelle la Server Action, qui recalcule les prix et affiche ensuite l'état « frais à confirmer ». Aucun paiement n'est demandé. La clé d'idempotence de la tentative reste dans `sessionStorage` jusqu'au résultat.
+- **S-20 — Suivi** (`/commande/apercu/suivi`) : frise, détails du devis, compte à rebours indicatif, acceptation/refus ; actualisation toutes les 15 secondes tant que le devis est ouvert. L'acceptation vérifie montant/version en base. Notifications dans l'application uniquement.
+- **S-28 — Détail commande** (`/commandes/apercu`) : reste à raccorder au détail du devis et aux mêmes actions.
+- **S-61 — Commandes et dispatch** (`/ops/commandes`) : la file dédiée, l'envoi/réémission du devis, la réauthentification sans perdre le montant saisi et la lecture sensible journalisée restent à implémenter.
 
 Les vues client et partenaire n'exposent que les colonnes nécessaires. La vue partenaire fournit ses lignes et le quartier seulement ; aucun téléphone, adresse, instructions ni identifiant client n'est dans une vue/table lisible par le partenaire. Le livreur n'obtient ces données que par une fonction après assignation et pendant une course active. Les accès admin aux données de commande/adresse sont journalisés dans `audit_logs`.
 

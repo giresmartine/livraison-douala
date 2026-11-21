@@ -165,31 +165,29 @@ export const screens: ScreenDefinition[] = [
   ),
   defineScreen(
     "S-15", "client", client, "/commande/livraison", { fr: "Mode de livraison", en: "Delivery options" },
-    { fr: "Choisir prioritaire, standard ou programmée et préciser l’adresse et les instructions.", en: "Choose priority, standard or scheduled delivery, then provide address and instructions." },
+    { fr: "Saisir librement le quartier, un repère et les instructions de livraison ; le GPS est facultatif et vérifié dans la zone de Douala.", en: "Enter any neighbourhood, landmark and delivery instructions; optional GPS is checked against Douala coverage." },
     [
-      { fr: "La programmation est P3 ; ne l’activer qu’après décision produit.", en: "Scheduling is P3; enable only after a product decision." },
-      { fr: "Adresse, zone, disponibilité et frais nécessitent une estimation serveur.", en: "Address, zone, availability and fees require a server quote." },
+      { fr: "Les frais de livraison restent nuls tant qu’un agent ne les a pas fixés.", en: "Delivery fees remain unset until an agent enters a quote." },
+      { fr: "La saisie de l’adresse ne déclenche aucun paiement.", en: "Entering an address does not trigger payment." },
     ],
-    { next: ["S-16"] },
+    { next: ["S-17"], sensitive: true },
   ),
   defineScreen(
     "S-16", "client", client, "/commande/offres", { fr: "Offres et pourboire", en: "Offers and tip" },
-    { fr: "Vérifier un code promotionnel et choisir un pourboire.", en: "Validate a promotion code and choose a tip." },
+    { fr: "Ancienne étape retirée du flux sans paiement.", en: "Legacy step removed from the no-payment flow." },
     [
-      { fr: "Le code est validé par le serveur ; les refus précisent expiration, minimum ou utilisation.", en: "The server validates codes; errors explain expiry, minimum or usage." },
-      { fr: "Pourboire : 200, 300, 500, 1 000 FCFA ou montant personnalisé.", en: "Tip: 200, 300, 500, 1,000 XAF or a custom amount." },
-      { fr: "Le don est désactivé et masqué en V1.", en: "Donations are disabled and hidden in V1." },
+      { fr: "Cette route redirige vers le récapitulatif de commande.", en: "This route redirects to the order summary." },
     ],
-    { next: ["S-17"] },
+    { next: ["S-17"], sensitive: true },
   ),
   defineScreen(
     "S-17", "client", client, "/commande/recapitulatif", { fr: "Récapitulatif", en: "Order summary" },
-    { fr: "Articles, sous-total, économies, frais, suppléments, pourboire et total serveur.", en: "Items, subtotal, savings, fees, surcharges, tip and server-calculated total." },
+    { fr: "Vérifier les articles puis envoyer la commande sans paiement ; les frais de livraison seront confirmés ensuite.", en: "Review items and submit without payment; delivery fees are confirmed later." },
     [
-      { fr: "Les prix ne sont jamais calculés uniquement dans le navigateur.", en: "Prices are never calculated only in the browser." },
-      { fr: "Le paiement reste bloqué si la zone, le minimum ou la disponibilité ne sont pas confirmés.", en: "Payment stays blocked until zone, minimum and availability are confirmed." },
+      { fr: "Les prix sont recalculés côté serveur à l’envoi ; aucun frais de livraison n’est supposé.", en: "Prices are recalculated server-side on submission; no delivery fee is assumed." },
+      { fr: "Aucun paiement n’est demandé dans ce flux.", en: "No payment is requested in this flow." },
     ],
-    { next: ["S-18"] },
+    { next: ["S-20"], sensitive: true },
   ),
   defineScreen(
     "S-18", "client", client, "/commande/paiement", { fr: "Paiement", en: "Payment" },
@@ -212,10 +210,10 @@ export const screens: ScreenDefinition[] = [
   ),
   defineScreen(
     "S-20", "client", client, "/commande/apercu/suivi", { fr: "Suivi de commande", en: "Track an order" },
-    { fr: "Carte, livreur, statuts, code de remise et aide pendant une livraison active.", en: "Map, courier, status, handover code and support during an active delivery." },
+    { fr: "Frise de suivi du devis de frais, avec acceptation ou refus par le client.", en: "Track the delivery-fee quote and accept or decline it." },
     [
-      { fr: "Position en temps réel uniquement pendant la course ; repli par interrogation toutes les 15 s.", en: "Live location only during the active trip; fallback polling every 15 s." },
-      { fr: "Temps réel désactivé hors commande active.", en: "Realtime is disabled outside an active order." },
+      { fr: "L’acceptation vérifie le montant et la version affichés ; l’expiration est contrôlée par la base.", en: "Acceptance verifies the displayed amount and version; the database checks expiry." },
+      { fr: "Les notifications restent dans l’application ; e-mail et SMS ne sont pas activés.", en: "Notifications are in-app only; email and SMS are not enabled." },
     ],
     { next: ["S-28", "S-32"], sensitive: true },
   ),

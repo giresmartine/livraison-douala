@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
-import { doualaCoverage } from "@/lib/config/coverage";
+import { saveOrderAddress, submitFeeQuoteOrder } from "@/app/[locale]/order-actions";
+import { doualaCoverage, isWithinDoualaCoverage } from "@/lib/config/coverage";
+import type { Coordinates } from "@/lib/config/coverage";
+import { buildFeeQuoteOrderItems } from "@/lib/order-flow";
 import type { Locale, ScreenDefinition } from "@/lib/screens";
 import type {
   StorefrontData,
@@ -44,7 +47,14 @@ type Cart = {
   lines: CartLine[];
 };
 
+type DeliveryAddressSummary = {
+  neighborhood: string;
+  landmark: string;
+};
+
 const CART_STORAGE_KEY = "douala-cart-v1";
+const DELIVERY_ADDRESS_ID_KEY = "delivery-address-id";
+const ORDER_IDEMPOTENCY_KEY = "fee-quote-order-idempotency-v1";
 const cartListeners = new Set<() => void>();
 let cachedCartJson: string | null | undefined;
 let cachedCartSnapshot: Cart | null = null;
@@ -362,8 +372,41 @@ export function StorefrontWorkspace({
   const router = useRouter();
   const cart = useSyncExternalStore(subscribeToCart, getCartSnapshot, getServerCartSnapshot);
   const [cartError, setCartError] = useState(false);
-  const [deliveryError, setDeliveryError] = useState(false);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [deliveryPending, setDeliveryPending] = useState(false);
+  const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
+  const [locationError, setLocationError] = useState(false);
+  const [gpsOutsideCoverage, setGpsOutsideCoverage] = useState(false);
+  const [deliverySummary, setDeliverySummary] = useState<DeliveryAddressSummary | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [orderPending, setOrderPending] = useState(false);
   const [search, setSearch] = useState(searchQuery ?? "");
+
+  useEffect(() => {
+    if (screen.id !== "S-17") return;
+    const timer = window.setTimeout(() => {
+      try {
+        const stored = sessionStorage.getItem("delivery-address-draft");
+        const parsed: unknown = stored ? JSON.parse(stored) : null;
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          "neighborhood" in parsed &&
+          typeof parsed.neighborhood === "string" &&
+          "landmark" in parsed &&
+          typeof parsed.landmark === "string"
+        ) {
+          setDeliverySummary({
+            neighborhood: parsed.neighborhood,
+            landmark: parsed.landmark,
+          });
+        }
+      } catch {
+        console.error("Could not restore the delivery address summary.");
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [screen.id]);
 
   function updateCart(next: Cart | null) {
     try {
@@ -417,8 +460,12 @@ export function StorefrontWorkspace({
     });
   }
 
-  function saveDeliveryDraft(event: FormEvent<HTMLFormElement>) {
+  async function saveDeliveryDraft(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (gpsOutsideCoverage) {
+      setDeliveryError("outside_coverage");
+      return;
+    }
     const formData = new FormData(event.currentTarget);
     const draft = {
       city: doualaCoverage.city,
@@ -427,13 +474,124 @@ export function StorefrontWorkspace({
       details: String(formData.get("details") ?? "").trim(),
     };
 
+    setDeliveryPending(true);
+    setDeliveryError(null);
     try {
+      const result = await saveOrderAddress({
+        ...draft,
+        coordinates,
+      });
+      if (!result.ok) {
+        setDeliveryError(result.code);
+        return;
+      }
       sessionStorage.setItem("delivery-address-draft", JSON.stringify(draft));
-      setDeliveryError(false);
-      router.push(`/${locale}/commande/offres`);
-    } catch (error) {
-      console.error("Could not save the delivery address draft.", error);
-      setDeliveryError(true);
+      sessionStorage.setItem(DELIVERY_ADDRESS_ID_KEY, result.addressId);
+      router.push(`/${locale}/commande/recapitulatif`);
+    } catch {
+      console.error("Could not save the delivery address.");
+      setDeliveryError("address_save_failed");
+    } finally {
+      setDeliveryPending(false);
+    }
+  }
+
+  function requestLocation() {
+    setLocationError(false);
+    if (!navigator.geolocation) {
+      setLocationError(true);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords: position }) => {
+        const current = {
+          latitude: position.latitude,
+          longitude: position.longitude,
+        };
+        if (!isWithinDoualaCoverage(current)) {
+          setCoordinates(null);
+          setGpsOutsideCoverage(true);
+          setLocationError(true);
+          return;
+        }
+        setCoordinates(current);
+        setGpsOutsideCoverage(false);
+        setLocationError(false);
+      },
+      () => setLocationError(true),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  }
+
+  async function submitOrder() {
+    if (!cart || cart.lines.length === 0) return;
+    setOrderPending(true);
+    setOrderError(null);
+
+    try {
+      const addressId = sessionStorage.getItem(DELIVERY_ADDRESS_ID_KEY);
+      if (!addressId) {
+        setOrderError("delivery_address_unavailable");
+        return;
+      }
+      const items = buildFeeQuoteOrderItems(cart.lines);
+      const fingerprint = JSON.stringify({ addressId, items });
+      const stored = sessionStorage.getItem(ORDER_IDEMPOTENCY_KEY);
+      let idempotencyKey: string;
+      if (stored) {
+        let previous: unknown;
+        try {
+          previous = JSON.parse(stored);
+        } catch {
+          console.error("Could not read the order idempotency record.");
+          setOrderError("idempotency_key_unavailable");
+          return;
+        }
+        if (
+          !previous ||
+          typeof previous !== "object" ||
+          !("fingerprint" in previous) ||
+          typeof previous.fingerprint !== "string" ||
+          !("key" in previous) ||
+          typeof previous.key !== "string" ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(previous.key)
+        ) {
+          console.error("The order idempotency record is invalid.");
+          setOrderError("idempotency_key_unavailable");
+          return;
+        }
+        if (previous.fingerprint === fingerprint) {
+          idempotencyKey = previous.key;
+        } else {
+          idempotencyKey = crypto.randomUUID();
+          sessionStorage.setItem(ORDER_IDEMPOTENCY_KEY, JSON.stringify({ fingerprint, key: idempotencyKey }));
+        }
+      } else {
+        idempotencyKey = crypto.randomUUID();
+        sessionStorage.setItem(ORDER_IDEMPOTENCY_KEY, JSON.stringify({ fingerprint, key: idempotencyKey }));
+      }
+
+      const result = await submitFeeQuoteOrder({
+        locale,
+        addressId,
+        idempotencyKey,
+        items,
+      });
+      if (!result.ok) {
+        setOrderError(result.code);
+        return;
+      }
+      updateCart(null);
+      sessionStorage.removeItem("delivery-address-draft");
+      sessionStorage.removeItem(DELIVERY_ADDRESS_ID_KEY);
+      sessionStorage.removeItem(ORDER_IDEMPOTENCY_KEY);
+      router.push(`/${locale}/commande/apercu/suivi?order=${result.orderId}`);
+    } catch {
+      console.error("Could not submit the fee quote order.");
+      setOrderError("order_submission_failed");
+    } finally {
+      setOrderPending(false);
     }
   }
 
@@ -478,8 +636,8 @@ export function StorefrontWorkspace({
         <StorefrontHeader locale={locale} title={screen.title[locale]} />
         <InfoMessage>
           {english
-            ? "Delivery is limited to Douala. Enter any neighbourhood; this saves a local draft only and does not create an order or calculate a fee."
-            : "La livraison est limitée à Douala. Saisis librement ton quartier ; cette étape enregistre seulement un brouillon local, sans créer de commande ni calculer de frais."}
+            ? "Delivery is limited to Douala. Enter any neighbourhood; a location outside the service area will be refused. No delivery fee is calculated here."
+            : "La livraison est limitée à Douala. Saisis librement ton quartier ; une position hors zone sera refusée. Aucun frais n’est calculé à cette étape."}
         </InfoMessage>
         <form className="storefront-delivery-form" onSubmit={saveDeliveryDraft}>
           <div className="storefront-form-field">
@@ -498,13 +656,34 @@ export function StorefrontWorkspace({
             <label htmlFor="delivery-details">{english ? "Additional details (optional)" : "Complément d’adresse (facultatif)"}</label>
             <textarea autoComplete="off" id="delivery-details" maxLength={500} name="details" rows={3} />
           </div>
-          {deliveryError && (
+          <div className="storefront-form-field">
+            <button className="storefront-small-link" onClick={requestLocation} type="button">
+              {english ? "Use my current location" : "Utiliser ma position actuelle"}
+            </button>
+            {coordinates && (
+              <span>{english ? "Location captured." : "Position enregistrée."}</span>
+            )}
+          </div>
+          {locationError && (
             <InfoMessage>
-              {english ? "This address could not be saved in this browser." : "Cette adresse n’a pas pu être enregistrée dans ce navigateur."}
+              {english
+                ? "Location is unavailable or outside Douala. Check the address and try again."
+                : "La position est indisponible ou hors de Douala. Vérifie l’adresse puis réessaie."}
             </InfoMessage>
           )}
-          <button className="storefront-primary-button" type="submit">
-            {english ? "Save draft and continue" : "Enregistrer le brouillon et continuer"}
+          {deliveryError && (
+            <InfoMessage>
+              {deliveryError === "outside_coverage"
+                ? english ? "This location is outside our Douala service area." : "Cette position est hors de notre zone de livraison à Douala."
+                : deliveryError === "auth_required"
+                  ? english ? "Sign in to save a delivery address." : "Connecte-toi pour enregistrer une adresse de livraison."
+                  : english ? "The address could not be saved. Please try again." : "L’adresse n’a pas pu être enregistrée. Réessaie."}
+            </InfoMessage>
+          )}
+          <button className="storefront-primary-button" disabled={deliveryPending} type="submit">
+            {deliveryPending
+              ? english ? "Saving…" : "Enregistrement…"
+              : english ? "Save address and continue" : "Enregistrer l’adresse et continuer"}
           </button>
         </form>
         <Link className="storefront-back-link" href={`/${locale}/paniers`}>
@@ -515,22 +694,74 @@ export function StorefrontWorkspace({
   }
 
   if (screen.id === "S-16") {
+    router.replace(`/${locale}/commande/recapitulatif`);
+    return null;
+  }
+
+  if (screen.id === "S-17") {
     return (
       <main className="storefront-page page-shell">
         <StorefrontHeader locale={locale} title={screen.title[locale]} />
-        <InfoMessage>
-          {english
-            ? "No server quote is available: the delivery zones, fees and payment provider are not configured. Promotions and tips cannot be validated, and checkout is blocked. No order has been created."
-            : "Aucun devis serveur n’est disponible : les zones, les frais et le prestataire de paiement ne sont pas configurés. Les promotions et pourboires ne peuvent pas être validés et le paiement reste bloqué. Aucune commande n’a été créée."}
-        </InfoMessage>
-        <div className="storefront-checkout-links">
-          <Link className="storefront-primary-button" href={`/${locale}/commande/livraison`}>
-            {english ? "Edit delivery address" : "Modifier l’adresse de livraison"}
-          </Link>
-          <Link className="storefront-back-link" href={`/${locale}/paniers`}>
-            {english ? "Back to cart" : "Retour au panier"}
-          </Link>
-        </div>
+        {!cart || cart.lines.length === 0 ? (
+          <>
+            <InfoMessage>
+              {english ? "Your cart is empty. No order has been created." : "Ton panier est vide. Aucune commande n’a été créée."}
+            </InfoMessage>
+            <Link className="storefront-back-link" href={`/${locale}/paniers`}>
+              {english ? "Back to cart" : "Retour au panier"}
+            </Link>
+          </>
+        ) : (
+          <>
+            <section className="storefront-menu-section">
+              <h2>{cart.partnerName}</h2>
+              <ul>
+                {cart.lines.map((line) => (
+                  <li key={cartLineKey(line)}>
+                    {line.quantity} × {line.product.name}
+                    {line.options.length > 0 && ` · ${line.options.map((option) => option.name).join(", ")}`}
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="storefront-menu-section">
+              <h2>{english ? "Delivery address" : "Adresse de livraison"}</h2>
+              {deliverySummary
+                ? <p>{deliverySummary.neighborhood} · {deliverySummary.landmark}</p>
+                : <p>{english ? "Saved address" : "Adresse enregistrée"}</p>}
+            </section>
+            <InfoMessage>
+              {english
+                ? "Product prices are recalculated by the server when you submit. Delivery fees stay unconfirmed until an agent sends a quote. No payment is taken in this step."
+                : "Les prix des articles sont recalculés par le serveur à l’envoi. Les frais de livraison restent à confirmer jusqu’au devis d’un agent. Aucun paiement n’est effectué à cette étape."}
+            </InfoMessage>
+            {orderError && (
+              <InfoMessage>
+              {orderError === "idempotency_key_unavailable"
+                ? english
+                  ? "This order cannot be retried safely. Check your tracking page before submitting another order."
+                  : "Cette commande ne peut pas être relancée en toute sécurité. Vérifie le suivi avant d’en envoyer une autre."
+                : orderError === "auth_required"
+                  ? english ? "Sign in before submitting your order." : "Connecte-toi avant d’envoyer ta commande."
+                  : orderError === "outside_coverage"
+                    ? english ? "The saved location is outside Douala. Update the delivery address." : "La position enregistrée est hors de Douala. Modifie l’adresse de livraison."
+                    : orderError === "partner_closed" || orderError === "partner_not_orderable"
+                      ? english ? "This shop is no longer accepting orders. Your cart is unchanged." : "Cette enseigne ne prend plus de commandes. Ton panier est conservé."
+                      : english ? "The order could not be submitted. Your cart is unchanged; please retry." : "La commande n’a pas pu être envoyée. Ton panier est conservé ; réessaie."}
+              </InfoMessage>
+            )}
+            <div className="storefront-checkout-links">
+              <Link className="storefront-back-link" href={`/${locale}/commande/livraison`}>
+                {english ? "Edit delivery address" : "Modifier l’adresse de livraison"}
+              </Link>
+              <button className="storefront-primary-button" disabled={orderPending} onClick={submitOrder} type="button">
+                {orderPending
+                  ? english ? "Submitting…" : "Envoi…"
+                  : english ? "Submit order — no payment" : "Envoyer la commande — sans paiement"}
+              </button>
+            </div>
+          </>
+        )}
       </main>
     );
   }
