@@ -1779,7 +1779,7 @@ h1 {
   border: 0;
   border-radius: 12px;
   background: var(--color-primary);
-  color: white;
+  color: var(--color-primary-contrast);
   cursor: pointer;
   font-weight: 750;
 }

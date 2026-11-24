@@ -25,6 +25,7 @@ test("admin can issue, cancel, and reissue a fee quote accessibly", async ({ pag
   expect(customer).toBeDefined();
 
   const idempotencyKey = `e2e-admin-quote-${crypto.randomUUID()}`;
+  const itemName = `TEST - E2E quote item ${idempotencyKey}`;
   const { data: order, error: orderError } = await service
     .from("orders")
     .insert({
@@ -51,7 +52,7 @@ test("admin can issue, cancel, and reissue a fee quote accessibly", async ({ pag
       order_id: order!.id,
       product_id: null,
       partner_id: null,
-      name_snapshot: "TEST - E2E quote item",
+      name_snapshot: itemName,
       unit_price: 10000,
       qty: 1,
       options: [],
@@ -67,7 +68,7 @@ test("admin can issue, cancel, and reissue a fee quote accessibly", async ({ pag
 
     await page.goto("/fr/ops/commandes");
     await expect(page.getByRole("heading", { name: "File des devis de livraison" })).toBeVisible();
-    await expect(page.getByText("TEST - E2E quote item")).toBeVisible();
+    await expect(page.getByText(itemName)).toBeVisible();
 
     const accessibility = await new AxeBuilder({ page }).analyze();
     expect(accessibility.violations).toEqual([]);
@@ -85,7 +86,22 @@ test("admin can issue, cancel, and reissue a fee quote accessibly", async ({ pag
     await page.getByRole("button", { name: "Réémettre le devis" }).click();
     await expect(page.getByText("Devis envoyé · version 2")).toBeVisible();
   } finally {
-    const { error: cleanupError } = await service.from("orders").delete().eq("id", order!.id);
-    if (cleanupError) throw new Error("Could not remove the isolated E2E fee-quote order.");
+    const { count: quoteCount, error: quoteReadError } = await service
+      .from("order_fee_quotes")
+      .select("id", { count: "exact", head: true })
+      .eq("order_id", order!.id);
+    if (quoteReadError) {
+      throw new Error(`Could not check for immutable E2E fee quotes: ${quoteReadError.message}`);
+    }
+    if (quoteCount === null) throw new Error("Could not determine whether the E2E order has immutable fee quotes.");
+
+    if (quoteCount > 0) {
+      console.info("Preserving the E2E order because its fee quote history is immutable.");
+    } else {
+      const { error: cleanupError } = await service.from("orders").delete().eq("id", order!.id);
+      if (cleanupError) {
+        throw new Error(`Could not remove the isolated E2E fee-quote order: ${cleanupError.message}`);
+      }
+    }
   }
 });
