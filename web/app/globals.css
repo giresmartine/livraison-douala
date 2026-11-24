@@ -1250,8 +1250,16 @@ h1 {
 .state-link {
   width: auto;
   min-width: 180px;
+  margin-top: 20px;
   padding-inline: 18px;
   text-decoration: none;
+}
+
+.state-link + .state-link {
+  margin-top: 12px;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .skeleton {
@@ -1756,6 +1764,13 @@ h1 {
 }
 
 .storefront-checkout-links .storefront-primary-button {
+  text-decoration: none;
+}
+
+.storefront-cart-continue {
+  display: block;
+  margin-top: 14px;
+  text-align: center;
   text-decoration: none;
 }
 

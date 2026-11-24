@@ -68,7 +68,7 @@ export async function signInAction(
     return { error: getCaptchaError(locale) };
   }
   if (!isAuthenticationEnabled) {
-    return { error: locale === "fr" ? "La connexion au service de comptes n’est pas encore configurée." : "The account service is not configured yet." };
+    return { error: locale === "fr" ? "Le service de connexion est momentanément indisponible. Réessaie plus tard." : "The sign-in service is temporarily unavailable. Please try again later." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -116,7 +116,7 @@ export async function signUpAction(
     return { error: getCaptchaError(locale) };
   }
   if (!isAuthenticationEnabled) {
-    return { error: locale === "fr" ? "La création de compte n’est pas encore configurée." : "Account creation is not configured yet." };
+    return { error: locale === "fr" ? "La création de compte est momentanément indisponible. Réessaie plus tard." : "Account creation is temporarily unavailable. Please try again later." };
   }
 
   const siteUrl = getSiteUrl();
@@ -168,7 +168,7 @@ export async function requestPasswordResetAction(
     return { error: getCaptchaError(locale) };
   }
   if (!isAuthenticationEnabled) {
-    return { error: locale === "fr" ? "La récupération de compte n’est pas encore configurée." : "Account recovery is not configured yet." };
+    return { error: locale === "fr" ? "La récupération de compte est momentanément indisponible. Réessaie plus tard." : "Account recovery is temporarily unavailable. Please try again later." };
   }
 
   const siteUrl = getSiteUrl();
@@ -201,7 +201,7 @@ export async function updatePasswordAction(
     return { error: locale === "fr" ? "Les deux mots de passe doivent correspondre et contenir au moins 12 caractères." : "Passwords must match and contain at least 12 characters." };
   }
   if (!isAuthenticationEnabled) {
-    return { error: locale === "fr" ? "La récupération de compte n’est pas encore configurée." : "Account recovery is not configured yet." };
+    return { error: locale === "fr" ? "La récupération de compte est momentanément indisponible. Réessaie plus tard." : "Account recovery is temporarily unavailable. Please try again later." };
   }
 
   const supabase = await createSupabaseServerClient();

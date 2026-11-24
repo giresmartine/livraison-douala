@@ -397,7 +397,7 @@ export function AdminFeeQuoteQueue({
                               siteKey={turnstileSiteKey}
                             />
                           )
-                          : <p role="alert">{english ? "Verification is not configured." : "La vérification n’est pas configurée."}</p>}
+                          : <p role="alert">{english ? "Verification is temporarily unavailable." : "La vérification est momentanément indisponible."}</p>}
                         {reauthError && <p role="alert">{reauthenticationMessage(reauthError)}</p>}
                         <button className="storefront-primary-button" disabled={!captchaToken || !turnstileSiteKey || pendingOrderId === order.id} type="submit">
                           {english ? "Verify and continue" : "Vérifier et continuer"}

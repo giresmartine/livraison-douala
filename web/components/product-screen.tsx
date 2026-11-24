@@ -726,7 +726,7 @@ function Catalogue({ locale }: { locale: Locale }) {
       <Empty
         title={tx(locale, "Aucun article publié", "No published item")}
         text={tx(locale, "Cinq articles validés sont nécessaires avant l’ouverture au public.", "Five verified items are required before the public opening.")}
-        action={tx(locale, "Voir l’aperçu client", "See the customer preview")}
+        action={tx(locale, "Voir la page publique", "See the public page")}
         href={`/${locale}/restaurants`}
       />
     </section>

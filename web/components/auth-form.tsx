@@ -164,8 +164,8 @@ export function AuthForm({
           {captchaRequired && authenticationEnabled && !turnstileSiteKey && (
             <p className="form-feedback" data-kind="error" role="status">
               {english
-                ? "Bot verification is not configured. Please try again later."
-                : "La vérification anti-robot n’est pas configurée. Réessaie plus tard."}
+                ? "Bot verification is temporarily unavailable. Please try again later."
+                : "La vérification anti-robot est momentanément indisponible. Réessaie plus tard."}
             </p>
           )}
           {!authenticationEnabled && (

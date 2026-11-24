@@ -9,6 +9,7 @@ import { doualaCoverage, isWithinDoualaCoverage } from "@/lib/config/coverage";
 import type { Coordinates } from "@/lib/config/coverage";
 import { buildFeeQuoteOrderItems } from "@/lib/order-flow";
 import { brand } from "@/lib/config/brand";
+import { isScreenGalleryEnabled } from "@/lib/config/features";
 import type { Locale, ScreenDefinition } from "@/lib/screens";
 import type {
   StorefrontData,
@@ -255,16 +256,16 @@ function CartPanel({
       </div>
       <p className="storefront-footnote">
         {english
-          ? "Delivery fee and final total are not available until a real delivery zone and server quote are configured."
-          : "Les frais de livraison et le total final seront connus uniquement après configuration d’une vraie zone et d’un devis serveur."}
+          ? "Delivery fees will be confirmed before any payment."
+          : "Les frais de livraison te seront confirmés avant tout paiement."}
       </p>
       <InfoMessage>
         {english
-          ? "Checkout is unavailable: delivery coverage, pricing and payment provider are not configured."
-          : "La commande est indisponible : la couverture, les tarifs et le prestataire de paiement ne sont pas configurés."}
+          ? "No payment is requested yet. You confirm the total once the delivery fee is confirmed."
+          : "Aucun paiement n’est demandé pour le moment. Tu valides le total une fois les frais de livraison confirmés."}
       </InfoMessage>
-      <Link className="storefront-back-link" href={`/${locale}/commande/livraison`}>
-        {english ? "Enter delivery address (draft only)" : "Saisir une adresse de livraison (brouillon seulement)"}
+      <Link className="storefront-primary-button storefront-cart-continue" href={`/${locale}/commande/livraison`}>
+        {english ? "Continue to delivery address" : "Continuer vers l’adresse de livraison"}
       </Link>
     </div>
   );
@@ -597,13 +598,15 @@ export function StorefrontWorkspace({
   }
 
   const liveCatalogueConfigured = listing?.configured ?? menu?.configured ?? false;
-  const emptyListMessage = liveCatalogueConfigured
+  const customerEmptyMessage = english
+    ? "No shops are available right now. Please check back soon."
+    : "Aucune enseigne n’est disponible pour le moment. Reviens bientôt !";
+  const developerHint = isScreenGalleryEnabled && !liveCatalogueConfigured
     ? english
-      ? "No verified shops are available in the connected catalogue yet."
-      : "Aucune enseigne vérifiée n’est encore disponible dans le catalogue connecté."
-    : english
-      ? "The live catalogue is not configured. No sample shops or products are shown."
-      : "Le catalogue réel n’est pas configuré. Aucun commerce ni produit fictif n’est affiché.";
+      ? " Development mode: no catalogue is loaded. Run “npm run dev:setup” (see docs/guides/lancer-en-local.md)."
+      : " Mode développement : aucun catalogue chargé. Lance « npm run dev:setup » (voir docs/guides/lancer-en-local.md)."
+    : "";
+  const emptyListMessage = customerEmptyMessage + developerHint;
 
   if (screen.id === "S-13" || screen.id === "S-14") {
     return (
@@ -733,8 +736,8 @@ export function StorefrontWorkspace({
             </section>
             <InfoMessage>
               {english
-                ? "Product prices are recalculated by the server when you submit. Delivery fees stay unconfirmed until an agent sends a quote. No payment is taken in this step."
-                : "Les prix des articles sont recalculés par le serveur à l’envoi. Les frais de livraison restent à confirmer jusqu’au devis d’un agent. Aucun paiement n’est effectué à cette étape."}
+                ? "Prices are checked when you submit. Delivery fees will be confirmed before any payment. No payment is requested at this step."
+                : "Les prix sont vérifiés à l’envoi. Les frais de livraison te seront confirmés avant tout paiement. Aucun paiement n’est demandé à cette étape."}
             </InfoMessage>
             {orderError && (
               <InfoMessage>
