@@ -1,7 +1,7 @@
 # État des lieux complet du projet
 
-Date de vérification : 24 novembre 2026  
-Branche vérifiée : `feat/bloc-b`  
+Date de vérification : 24 novembre 2026
+Branche vérifiée : `feat/bloc-b`
 Dépôt distant : `https://github.com/giresmartine/livraison-douala.git`
 
 ## Résumé exécutif honnête
@@ -281,7 +281,7 @@ Toutes les migrations ont été appliquées avec succès dans la CI locale GitHu
 - Import enseignes par tableur : non trouvé comme workflow de code validé. Le JSON est la seule source démo.
 - Photos : aucune image protégée; code visuel initiale/dégradé prévu. Dossier des licences : non vérifié.
 - Enseignes démo : fichier unique [enseignes.json](<../web/supabase/dev-data/enseignes.json>), script upsert/seed.
-- Script seed : refuse production, vérifie développement, garde les slugs, archive les anciennes lignes référencées. 
+- Script seed : refuse production, vérifie développement, garde les slugs, archive les anciennes lignes référencées.
 - 40 enseignes fictives sont déclarées avec le préfixe `TEST -`.
 - Les noms n’ont pas été vérifiés sur le web; la non-existence de marque connue n’est pas prouvée.
 - Aucun catalogue réel partenaire n’a été fourni.
